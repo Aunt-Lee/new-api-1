@@ -24,6 +24,7 @@ import {
   useMemo,
   useState,
 } from 'react'
+
 import { getCookie, removeCookie, setCookie } from '@/lib/cookies'
 import {
   CONTENT_LAYOUT_VALUES,
@@ -128,6 +129,11 @@ export function ThemeCustomizationProvider(props: {
       preset === DEFAULT_THEME_CUSTOMIZATION.preset ? null : preset
     )
   }, [preset])
+
+  useEffect(() => {
+    applyAttribute('data-theme-font', null)
+    removeCookie('theme_font')
+  }, [])
 
   useEffect(() => {
     applyAttribute(
