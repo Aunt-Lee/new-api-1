@@ -17,12 +17,12 @@ along with this program. If not, see <https://www.gnu.org/licenses/>.
 For commercial licensing, please contact support@quantumnous.com
 */
 import { useEffect, useMemo, useState } from 'react'
-import { GitHubLogoIcon } from '@radix-ui/react-icons'
 import { useQuery } from '@tanstack/react-query'
 import { Link } from '@tanstack/react-router'
 import { Check, Copy, Play } from 'lucide-react'
 import { useTranslation } from 'react-i18next'
 import { toast } from 'sonner'
+import { IconGithub } from '@/assets/brand-icons'
 import { useSystemConfigStore } from '@/stores/system-config-store'
 import { api } from '@/lib/api'
 import { getCurrencyDisplay } from '@/lib/currency'
@@ -534,7 +534,7 @@ export function Home() {
                         )
                       }
                     >
-                      <GitHubLogoIcon data-icon='inline-start' />
+                      <IconGithub data-icon='inline-start' />
                       GitHub
                     </Button>
                   )}
