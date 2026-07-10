@@ -103,6 +103,24 @@ export const modelPricingConfig: ModelPricingConfig[] = [
     cacheHit: '>93%',
   },
   {
+    name: 'gpt-5.6-sol',
+    officialInput: 35,
+    officialOutput: 210,
+    cacheHit: '>93%',
+  },
+  {
+    name: 'gpt-5.6-terra',
+    officialInput: 17.5,
+    officialOutput: 105,
+    cacheHit: '>93%',
+  },
+  {
+    name: 'gpt-5.6-luna',
+    officialInput: 7,
+    officialOutput: 42,
+    cacheHit: '>93%',
+  },
+  {
     name: 'gpt-5.5',
     officialInput: 35,
     officialOutput: 210,
