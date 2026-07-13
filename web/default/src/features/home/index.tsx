@@ -206,6 +206,19 @@ function getOutputPriceRangeUSD(
   )
 }
 
+function getConfiguredInputPriceUSD(model: PricingModel): number | null {
+  if (model.quota_type !== QUOTA_TYPE_VALUES.TOKEN) return null
+  const value = model.model_ratio * 2
+  return Number.isFinite(value) && value > 0 ? value : null
+}
+
+function getConfiguredOutputPriceUSD(model: PricingModel): number | null {
+  const inputPrice = getConfiguredInputPriceUSD(model)
+  if (!hasNumber(inputPrice)) return null
+  const value = inputPrice * model.completion_ratio
+  return Number.isFinite(value) && value > 0 ? value : null
+}
+
 function getImagePriceRangeUSD(
   model: PricingModel,
   groupRatios: Record<string, number>,
@@ -369,17 +382,16 @@ export function Home() {
           groupRatios,
           usableGroups
         )
+        const configuredInputPrice = getConfiguredInputPriceUSD(model)
+        const configuredOutputPrice = getConfiguredOutputPriceUSD(model)
 
         return {
           name: configItem.name,
           inputPrice: formatPriceRange(inputPriceRange),
           outputPrice: formatPriceRange(outputPriceRange),
-          officialInput: formatPrice(configItem.officialInput),
-          officialOutput: formatPrice(configItem.officialOutput),
-          discount: formatDiscountRange(
-            inputPriceRange,
-            configItem.officialInput
-          ),
+          officialInput: formatPrice(configuredInputPrice),
+          officialOutput: formatPrice(configuredOutputPrice),
+          discount: formatDiscountRange(inputPriceRange, configuredInputPrice),
           cacheHit: configItem.cacheHit || '-',
         }
       })

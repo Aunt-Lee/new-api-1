@@ -5,8 +5,6 @@
 
 export interface ModelPricingConfig {
   name: string
-  officialInput?: number
-  officialOutput?: number
   cacheHit?: string
 }
 
@@ -53,89 +51,63 @@ export const imagePricingHeaderConfig = {
 }
 
 /**
- * 配置首页需要展示的模型及其官方价格
+ * 配置首页需要展示的模型
  * - name: 模型名称
- * - officialInput: 官方输入价格（按 1M token, 单位 USD）
- * - officialOutput: 官方输出价格（按 1M token, 单位 USD）
  * - cacheHit: 缓存命中展示文本
+ *
+ * 价格从后台 /api/pricing 的模型倍率配置读取，不在前端写死。
  */
 export const modelPricingConfig: ModelPricingConfig[] = [
   {
     name: 'claude-fable-5',
-    officialInput: 70,
-    officialOutput: 350,
     cacheHit: '>93%',
   },
   {
     name: 'claude-opus-4-8',
-    officialInput: 35,
-    officialOutput: 175,
     cacheHit: '>93%',
   },
   {
     name: 'claude-opus-4-7',
-    officialInput: 35,
-    officialOutput: 175,
     cacheHit: '>93%',
   },
   {
     name: 'claude-opus-4-6',
-    officialInput: 35,
-    officialOutput: 175,
     cacheHit: '>93%',
   },
   {
     name: 'claude-sonnet-5',
-    officialInput: 21,
-    officialOutput: 105,
     cacheHit: '>93%',
   },
   {
     name: 'claude-sonnet-4-6',
-    officialInput: 21,
-    officialOutput: 105,
     cacheHit: '>93%',
   },
   {
     name: 'claude-haiku-4-5',
-    officialInput: 7,
-    officialOutput: 35,
     cacheHit: '>93%',
   },
   {
     name: 'gpt-5.6-sol',
-    officialInput: 35,
-    officialOutput: 210,
     cacheHit: '>93%',
   },
   {
     name: 'gpt-5.6-terra',
-    officialInput: 17.5,
-    officialOutput: 105,
     cacheHit: '>93%',
   },
   {
     name: 'gpt-5.6-luna',
-    officialInput: 7,
-    officialOutput: 42,
     cacheHit: '>93%',
   },
   {
     name: 'gpt-5.5',
-    officialInput: 35,
-    officialOutput: 210,
     cacheHit: '>93%',
   },
   {
     name: 'gpt-5.4',
-    officialInput: 17.5,
-    officialOutput: 105,
     cacheHit: '>93%',
   },
   {
     name: 'gpt-5.3-codex',
-    officialInput: 12.25,
-    officialOutput: 98,
     cacheHit: '>93%',
   },
 ]
@@ -170,7 +142,7 @@ export const imageModelPricingConfig: ImageModelPricingConfig[] = [
  */
 export const pricingNoticeConfig = {
   // 公告文字内容
-  text: '新用户可以0.1元购买1元试用套餐，7天有效，累计消费满500可开发票',
+  text: '建议用多少充多少，累计消费满500可开发票',
   linkText: '',
   linkUrl: '',
   // 是否显示公告

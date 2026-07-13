@@ -18,18 +18,10 @@ For commercial licensing, please contact support@quantumnous.com
 */
 import { useTranslation } from 'react-i18next'
 import { AnimateInView } from '@/components/animate-in-view'
-import { modelPricingConfig, pricingCurrencyConfig } from '../../model-pricing-config'
+import { modelPricingConfig } from '../../model-pricing-config'
 
 interface ModelPricingProps {
   className?: string
-}
-
-function formatPrice(value?: number): string {
-  if (typeof value !== 'number' || !Number.isFinite(value) || value <= 0) {
-    return '-'
-  }
-  const { symbol } = pricingCurrencyConfig
-  return `${symbol}${value.toFixed(value >= 1 ? 2 : 4).replace(/\.0+$/, '').replace(/(\.\d*?)0+$/, '$1')}`
 }
 
 export function ModelPricing(_props: ModelPricingProps) {
@@ -51,25 +43,17 @@ export function ModelPricing(_props: ModelPricingProps) {
         </AnimateInView>
 
         <div className='border-border/70 bg-card/80 overflow-hidden rounded-2xl border shadow-[0_24px_60px_-44px_color-mix(in_oklch,var(--foreground)_28%,transparent)] backdrop-blur-sm'>
-          <div className='bg-muted/55 grid grid-cols-4 px-5 py-3 text-xs font-semibold tracking-wide uppercase md:px-6'>
+          <div className='bg-muted/55 grid grid-cols-2 px-5 py-3 text-xs font-semibold tracking-wide uppercase md:px-6'>
             <span>{t('Model')}</span>
-            <span className='text-right'>{t('Official Input')}</span>
-            <span className='text-right'>{t('Official Output')}</span>
             <span className='text-right'>{t('Cache Hit')}</span>
           </div>
           <div>
             {modelPricingConfig.map((item) => (
               <div
                 key={item.name}
-                className='border-border/45 grid grid-cols-4 items-center border-t px-5 py-3 text-sm md:px-6'
+                className='border-border/45 grid grid-cols-2 items-center border-t px-5 py-3 text-sm md:px-6'
               >
                 <span className='font-medium'>{item.name}</span>
-                <span className='text-right font-mono text-muted-foreground'>
-                  {formatPrice(item.officialInput)}
-                </span>
-                <span className='text-right font-mono text-muted-foreground'>
-                  {formatPrice(item.officialOutput)}
-                </span>
                 <span className='text-right font-mono text-emerald-700 dark:text-emerald-300'>
                   {item.cacheHit || '-'}
                 </span>
