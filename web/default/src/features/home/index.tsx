@@ -84,6 +84,8 @@ interface HomeStatusResponse {
   }
 }
 
+const OFFICIAL_PRICE_CNY_EXCHANGE_RATE = 7
+
 function hasNumber(value: number | null | undefined): value is number {
   return typeof value === 'number' && Number.isFinite(value)
 }
@@ -217,6 +219,17 @@ function getConfiguredOutputPriceUSD(model: PricingModel): number | null {
   if (!hasNumber(inputPrice)) return null
   const value = inputPrice * model.completion_ratio
   return Number.isFinite(value) && value > 0 ? value : null
+}
+
+function getOfficialPriceCNY(value: number | null): number | null {
+  if (!hasNumber(value)) return null
+  return value * OFFICIAL_PRICE_CNY_EXCHANGE_RATE
+}
+
+function formatOfficialPrice(value: number | null): string {
+  const price = getOfficialPriceCNY(value)
+  if (!hasNumber(price) || price <= 0) return '-'
+  return formatTruncatedCurrency(price, '¥', 'CNY')
 }
 
 function getImagePriceRangeUSD(
@@ -384,14 +397,15 @@ export function Home() {
         )
         const configuredInputPrice = getConfiguredInputPriceUSD(model)
         const configuredOutputPrice = getConfiguredOutputPriceUSD(model)
+        const officialInputPrice = getOfficialPriceCNY(configuredInputPrice)
 
         return {
           name: configItem.name,
           inputPrice: formatPriceRange(inputPriceRange),
           outputPrice: formatPriceRange(outputPriceRange),
-          officialInput: formatPrice(configuredInputPrice),
-          officialOutput: formatPrice(configuredOutputPrice),
-          discount: formatDiscountRange(inputPriceRange, configuredInputPrice),
+          officialInput: formatOfficialPrice(configuredInputPrice),
+          officialOutput: formatOfficialPrice(configuredOutputPrice),
+          discount: formatDiscountRange(inputPriceRange, officialInputPrice),
           cacheHit: configItem.cacheHit || '-',
         }
       })
