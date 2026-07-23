@@ -16,18 +16,16 @@ along with this program. If not, see <https://www.gnu.org/licenses/>.
 
 For commercial licensing, please contact support@quantumnous.com
 */
-import { useEffect, useMemo, useState } from 'react'
 import { useQuery } from '@tanstack/react-query'
 import { Link } from '@tanstack/react-router'
 import { Check, Copy, Play } from 'lucide-react'
+import { useEffect, useMemo, useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import { toast } from 'sonner'
+
 import { IconGithub } from '@/assets/brand-icons'
-import { useSystemConfigStore } from '@/stores/system-config-store'
-import { api } from '@/lib/api'
-import { getCurrencyDisplay } from '@/lib/currency'
-import { formatQuota } from '@/lib/format'
-import { cn } from '@/lib/utils'
+import { PublicLayout } from '@/components/layout'
+import { Footer } from '@/components/layout/components/footer'
 import { Alert, AlertDescription } from '@/components/ui/alert'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
@@ -40,13 +38,17 @@ import {
 } from '@/components/ui/card'
 import { Input } from '@/components/ui/input'
 import { Separator } from '@/components/ui/separator'
-import { PublicLayout } from '@/components/layout'
-import { Footer } from '@/components/layout/components/footer'
 import { getPricing } from '@/features/pricing/api'
 import { QUOTA_TYPE_VALUES } from '@/features/pricing/constants'
 import type { PricingModel } from '@/features/pricing/types'
 import { getPublicPlans } from '@/features/subscriptions/api'
 import { formatDuration, formatResetPeriod } from '@/features/subscriptions/lib'
+import { api } from '@/lib/api'
+import { formatLocalCurrencyAmount, getCurrencyDisplay } from '@/lib/currency'
+import { formatQuota } from '@/lib/format'
+import { cn } from '@/lib/utils'
+import { useSystemConfigStore } from '@/stores/system-config-store'
+
 import {
   imageModelPricingConfig,
   imagePricingHeaderConfig,
@@ -83,8 +85,6 @@ interface HomeStatusResponse {
     serverAddress?: string
   }
 }
-
-const OFFICIAL_PRICE_CNY_EXCHANGE_RATE = 7
 
 function hasNumber(value: number | null | undefined): value is number {
   return typeof value === 'number' && Number.isFinite(value)
@@ -137,13 +137,6 @@ function formatPrice(value: number | null | undefined): string {
     )
   }
   return formatTruncatedCurrency(value, '$', 'USD')
-}
-
-function formatSubscriptionPrice(amount: number | string): string {
-  const numeric =
-    typeof amount === 'number' ? amount : Number.parseFloat(String(amount))
-  if (!Number.isFinite(numeric)) return '-'
-  return `¥${numeric.toFixed(2)}`
 }
 
 function getModelUsableGroupRatios(
@@ -221,15 +214,9 @@ function getConfiguredOutputPriceUSD(model: PricingModel): number | null {
   return Number.isFinite(value) && value > 0 ? value : null
 }
 
-function getOfficialPriceCNY(value: number | null): number | null {
-  if (!hasNumber(value)) return null
-  return value * OFFICIAL_PRICE_CNY_EXCHANGE_RATE
-}
-
 function formatOfficialPrice(value: number | null): string {
-  const price = getOfficialPriceCNY(value)
-  if (!hasNumber(price) || price <= 0) return '-'
-  return formatTruncatedCurrency(price, '¥', 'CNY')
+  if (!hasNumber(value) || value <= 0) return '-'
+  return formatTruncatedCurrency(value, '$', 'USD')
 }
 
 function getImagePriceRangeUSD(
@@ -397,7 +384,6 @@ export function Home() {
         )
         const configuredInputPrice = getConfiguredInputPriceUSD(model)
         const configuredOutputPrice = getConfiguredOutputPriceUSD(model)
-        const officialInputPrice = getOfficialPriceCNY(configuredInputPrice)
 
         return {
           name: configItem.name,
@@ -405,7 +391,7 @@ export function Home() {
           outputPrice: formatPriceRange(outputPriceRange),
           officialInput: formatOfficialPrice(configuredInputPrice),
           officialOutput: formatOfficialPrice(configuredOutputPrice),
-          discount: formatDiscountRange(inputPriceRange, officialInputPrice),
+          discount: formatDiscountRange(inputPriceRange, configuredInputPrice),
           cacheHit: configItem.cacheHit || '-',
         }
       })
@@ -821,8 +807,8 @@ export function Home() {
                             <CardContent className='flex flex-1 flex-col gap-5'>
                               <div className='bg-primary/8 rounded-2xl px-4 py-3'>
                                 <span className='text-primary text-3xl font-bold'>
-                                  {formatSubscriptionPrice(
-                                    plan.price_amount || 0
+                                  {formatLocalCurrencyAmount(
+                                    Number(plan.price_amount || 0)
                                   )}
                                 </span>
                               </div>
