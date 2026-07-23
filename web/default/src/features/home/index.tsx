@@ -37,6 +37,7 @@ import {
 } from '@/components/ui/card'
 import { Input } from '@/components/ui/input'
 import { Separator } from '@/components/ui/separator'
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import { getPricing } from '@/features/pricing/api'
 import { QUOTA_TYPE_VALUES } from '@/features/pricing/constants'
 import type { PricingModel } from '@/features/pricing/types'
@@ -354,6 +355,27 @@ export function Home() {
           Number(b.plan?.sort_order || 0) - Number(a.plan?.sort_order || 0)
       )
   }, [subscriptionPlansData])
+
+  const subscriptionPlanGroups = useMemo(
+    () =>
+      [
+        {
+          value: 'credit',
+          labelKey: 'Credit Plans',
+          plans: subscriptionPlans.filter(
+            (item) => item.plan.quota_reset_period === 'never'
+          ),
+        },
+        {
+          value: 'reset',
+          labelKey: 'Reset Plans',
+          plans: subscriptionPlans.filter(
+            (item) => item.plan.quota_reset_period !== 'never'
+          ),
+        },
+      ].filter((group) => group.plans.length > 0),
+    [subscriptionPlans]
+  )
 
   const modelPricingRows = useMemo<ModelPricingRow[]>(() => {
     const pricingModels = pricingData?.data || []
@@ -720,80 +742,101 @@ export function Home() {
                     <h2 className='mb-6 text-center text-xl font-semibold md:text-2xl'>
                       {t('Subscription Plans')}
                     </h2>
-                    <div className='grid grid-cols-1 gap-4 md:grid-cols-2 xl:grid-cols-3'>
-                      {subscriptionPlans.map((item) => {
-                        const plan = item.plan
-                        const totalAmount = Number(plan.total_amount || 0)
-                        const resetPeriod = formatResetPeriod(plan, t)
-                        const benefits = [
-                          `${t('Validity Period')}: ${formatDuration(plan, t)}`,
-                          resetPeriod !== t('No Reset')
-                            ? `${t('Quota Reset')}: ${resetPeriod}`
-                            : null,
-                          totalAmount > 0
-                            ? `${t('Total Quota')}: ${formatQuota(totalAmount)}`
-                            : `${t('Total Quota')}: ${t('Unlimited')}`,
-                          plan.upgrade_group
-                            ? `${t('Upgrade Group')}: ${plan.upgrade_group}`
-                            : null,
-                        ].filter(Boolean) as string[]
+                    <Tabs defaultValue={subscriptionPlanGroups[0].value}>
+                      <TabsList
+                        className={cn(
+                          'mx-auto mb-6 grid w-full max-w-sm',
+                          subscriptionPlanGroups.length === 1
+                            ? 'grid-cols-1'
+                            : 'grid-cols-2'
+                        )}
+                      >
+                        {subscriptionPlanGroups.map((group) => (
+                          <TabsTrigger key={group.value} value={group.value}>
+                            {t(group.labelKey)}
+                          </TabsTrigger>
+                        ))}
+                      </TabsList>
 
-                        return (
-                          <Card
-                            key={plan.id}
-                            className='bg-card/70 min-h-[240px] rounded-3xl text-left backdrop-blur-md transition-transform hover:-translate-y-0.5'
-                          >
-                            <CardHeader>
-                              <CardTitle
-                                role='heading'
-                                aria-level={3}
-                                className='truncate text-lg font-semibold'
-                              >
-                                {plan.title || t('Subscription Plans')}
-                              </CardTitle>
-                              {plan.subtitle && (
-                                <div className='text-muted-foreground line-clamp-2 text-sm'>
-                                  {plan.subtitle}
-                                </div>
-                              )}
-                            </CardHeader>
+                      {subscriptionPlanGroups.map((group) => (
+                        <TabsContent key={group.value} value={group.value}>
+                          <div className='grid grid-cols-1 gap-4 md:grid-cols-2 xl:grid-cols-3'>
+                            {group.plans.map((item) => {
+                              const plan = item.plan
+                              const totalAmount = Number(plan.total_amount || 0)
+                              const resetPeriod = formatResetPeriod(plan, t)
+                              const benefits = [
+                                `${t('Validity Period')}: ${formatDuration(plan, t)}`,
+                                resetPeriod !== t('No Reset')
+                                  ? `${t('Quota Reset')}: ${resetPeriod}`
+                                  : null,
+                                totalAmount > 0
+                                  ? `${t('Total Quota')}: ${formatQuota(totalAmount)}`
+                                  : `${t('Total Quota')}: ${t('Unlimited')}`,
+                                plan.upgrade_group
+                                  ? `${t('Upgrade Group')}: ${plan.upgrade_group}`
+                                  : null,
+                              ].filter(Boolean) as string[]
 
-                            <CardContent className='flex flex-1 flex-col gap-5'>
-                              <div className='bg-primary/8 rounded-2xl px-4 py-3'>
-                                <span className='text-primary text-3xl font-bold'>
-                                  {formatLocalCurrencyAmount(
-                                    Number(plan.price_amount || 0)
-                                  )}
-                                </span>
-                              </div>
-
-                              <div className='flex flex-col gap-2'>
-                                {benefits.map((benefit) => (
-                                  <div
-                                    key={benefit}
-                                    className='text-muted-foreground flex items-start gap-2 text-sm'
-                                  >
-                                    <Check className='text-primary mt-0.5 size-4 shrink-0' />
-                                    <span>{benefit}</span>
-                                  </div>
-                                ))}
-                              </div>
-                            </CardContent>
-
-                            <CardFooter>
-                              <Link to='/wallet' className='w-full'>
-                                <Button
-                                  variant='outline'
-                                  className='w-full rounded-full'
+                              return (
+                                <Card
+                                  key={plan.id}
+                                  className='bg-card/70 min-h-[240px] rounded-3xl text-left backdrop-blur-md transition-transform hover:-translate-y-0.5'
                                 >
-                                  {t('Subscribe Now')}
-                                </Button>
-                              </Link>
-                            </CardFooter>
-                          </Card>
-                        )
-                      })}
-                    </div>
+                                  <CardHeader>
+                                    <CardTitle
+                                      role='heading'
+                                      aria-level={3}
+                                      className='truncate text-lg font-semibold'
+                                    >
+                                      {plan.title || t('Subscription Plans')}
+                                    </CardTitle>
+                                    {plan.subtitle && (
+                                      <div className='text-muted-foreground line-clamp-2 text-sm'>
+                                        {plan.subtitle}
+                                      </div>
+                                    )}
+                                  </CardHeader>
+
+                                  <CardContent className='flex flex-1 flex-col gap-5'>
+                                    <div className='bg-primary/8 rounded-2xl px-4 py-3'>
+                                      <span className='text-primary text-3xl font-bold'>
+                                        {formatLocalCurrencyAmount(
+                                          Number(plan.price_amount || 0)
+                                        )}
+                                      </span>
+                                    </div>
+
+                                    <div className='flex flex-col gap-2'>
+                                      {benefits.map((benefit) => (
+                                        <div
+                                          key={benefit}
+                                          className='text-muted-foreground flex items-start gap-2 text-sm'
+                                        >
+                                          <Check className='text-primary mt-0.5 size-4 shrink-0' />
+                                          <span>{benefit}</span>
+                                        </div>
+                                      ))}
+                                    </div>
+                                  </CardContent>
+
+                                  <CardFooter>
+                                    <Link to='/wallet' className='w-full'>
+                                      <Button
+                                        variant='outline'
+                                        className='w-full rounded-full'
+                                      >
+                                        {t('Subscribe Now')}
+                                      </Button>
+                                    </Link>
+                                  </CardFooter>
+                                </Card>
+                              )
+                            })}
+                          </div>
+                        </TabsContent>
+                      ))}
+                    </Tabs>
                   </div>
                 )}
               </div>
