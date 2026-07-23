@@ -152,17 +152,3 @@ export const imageModelPricingConfig: ImageModelPricingConfig[] = [
     ],
   },
 ]
-
-/**
- * 公告文字配置
- * 您可以自定义价格对比下方的公告内容
- * 支持 HTML 标签（如 <a> 链接）
- */
-export const pricingNoticeConfig = {
-  // 公告文字内容
-  text: '建议用多少充多少，累计消费满500可开发票',
-  linkText: '',
-  linkUrl: '',
-  // 是否显示公告
-  enabled: true,
-}

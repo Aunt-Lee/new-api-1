@@ -26,7 +26,6 @@ import { toast } from 'sonner'
 import { IconGithub } from '@/assets/brand-icons'
 import { PublicLayout } from '@/components/layout'
 import { Footer } from '@/components/layout/components/footer'
-import { Alert, AlertDescription } from '@/components/ui/alert'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import {
@@ -54,7 +53,6 @@ import {
   imagePricingHeaderConfig,
   modelPricingConfig,
   pricingHeaderConfig,
-  pricingNoticeConfig,
 } from './model-pricing-config'
 
 interface ModelPricingRow {
@@ -717,55 +715,11 @@ export function Home() {
                   </CardContent>
                 </Card>
 
-                {pricingNoticeConfig.enabled &&
-                  subscriptionPlans.length === 0 && (
-                    <Alert className='mt-4 w-full max-w-5xl text-center backdrop-blur-sm'>
-                      <AlertDescription>
-                        {pricingNoticeConfig.text}
-                        {pricingNoticeConfig.linkText &&
-                        pricingNoticeConfig.linkUrl ? (
-                          <>
-                            {' '}
-                            <a
-                              href={pricingNoticeConfig.linkUrl}
-                              target='_blank'
-                              rel='noreferrer'
-                              className='font-semibold'
-                            >
-                              {pricingNoticeConfig.linkText}
-                            </a>
-                          </>
-                        ) : null}
-                      </AlertDescription>
-                    </Alert>
-                  )}
-
                 {subscriptionPlans.length > 0 && (
                   <div className='mt-6 w-full max-w-5xl'>
                     <h2 className='mb-6 text-center text-xl font-semibold md:text-2xl'>
                       {t('Subscription Plans')}
                     </h2>
-                    {pricingNoticeConfig.enabled && (
-                      <Alert className='mb-4 text-center backdrop-blur-sm'>
-                        <AlertDescription>
-                          {pricingNoticeConfig.text}
-                          {pricingNoticeConfig.linkText &&
-                          pricingNoticeConfig.linkUrl ? (
-                            <>
-                              {' '}
-                              <a
-                                href={pricingNoticeConfig.linkUrl}
-                                target='_blank'
-                                rel='noreferrer'
-                                className='font-semibold'
-                              >
-                                {pricingNoticeConfig.linkText}
-                              </a>
-                            </>
-                          ) : null}
-                        </AlertDescription>
-                      </Alert>
-                    )}
                     <div className='grid grid-cols-1 gap-4 md:grid-cols-2 xl:grid-cols-3'>
                       {subscriptionPlans.map((item) => {
                         const plan = item.plan
