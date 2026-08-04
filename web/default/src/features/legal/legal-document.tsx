@@ -50,9 +50,17 @@ export function LegalDocument({
   })
 
   const rawContent = data?.data?.trim() ?? ''
-  const hasContent = rawContent.length > 0
+  // Prevent an accidentally pasted template instruction from appearing in a
+  // published legal document while the configured content is being corrected.
+  const publishedContent = rawContent
+    .replaceAll(
+      /(?:<p[^>]*>\s*)?(?:Before publishing this document, replace every value in square brackets with accurate information and remove this note\.|发布本文档前，将所有方括号中的值替换为准确信息，并删除此注释)(?:\s*<\/p>)?/gi,
+      ''
+    )
+    .trim()
+  const hasContent = publishedContent.length > 0
   const isUrl = hasContent && isHttpUrl(rawContent)
-  const contentIsHtml = hasContent && isLikelyHtml(rawContent)
+  const contentIsHtml = hasContent && isLikelyHtml(publishedContent)
   const success = data?.success ?? false
 
   if (isLoading) {
@@ -128,7 +136,7 @@ export function LegalDocument({
         <RichContent
           mode='html'
           htmlVariant='isolated'
-          content={rawContent}
+          content={publishedContent}
         />
       ) : (
         <div className='mx-auto max-w-4xl space-y-6 py-12'>
@@ -138,7 +146,7 @@ export function LegalDocument({
 
           <RichContent
             mode='markdown'
-            content={rawContent}
+            content={publishedContent}
             className='prose-neutral dark:prose-invert max-w-none'
           />
         </div>

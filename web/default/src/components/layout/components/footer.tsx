@@ -237,6 +237,12 @@ export function Footer(props: FooterProps) {
               dangerouslySetInnerHTML={{ __html: footerHtml }}
             />
             <div className='border-border/60 text-muted-foreground/45 flex w-full flex-wrap items-center justify-center gap-x-3 gap-y-1 border-t pt-4 text-xs sm:w-auto sm:justify-end sm:border-t-0 sm:border-l sm:pt-0 sm:pl-5'>
+              <a
+                href='mailto:luohui360@gmail.com'
+                className='hover:text-foreground transition-colors duration-200'
+              >
+                luohui360@gmail.com
+              </a>
               <LegalLinks />
               <ProjectAttribution currentYear={currentYear} inline />
             </div>
@@ -264,22 +270,25 @@ export function Footer(props: FooterProps) {
                 {displayName}
               </span>
             </Link>
-            <p className='text-muted-foreground/60 mt-3 max-w-[200px] text-xs leading-relaxed'>
-              {t('Powerful API Management Platform')}
-            </p>
+            <a
+              href='mailto:luohui360@gmail.com'
+              className='text-muted-foreground/60 hover:text-foreground mt-3 inline-block text-xs leading-relaxed transition-colors'
+            >
+              luohui360@gmail.com
+            </a>
           </div>
 
           {/* Links columns */}
           {isDemoSiteMode && (
             <div className='grid grid-cols-3 gap-8 md:gap-16'>
-              {displayColumns.map((column, index) => (
-                <div key={index}>
+              {displayColumns.map((column) => (
+                <div key={column.title}>
                   <p className='text-muted-foreground/50 mb-3 text-xs font-medium tracking-wider uppercase'>
                     {t(column.title)}
                   </p>
                   <ul className='space-y-2.5'>
-                    {column.links.map((link, linkIndex) => (
-                      <li key={linkIndex}>
+                    {column.links.map((link) => (
+                      <li key={`${link.href}-${link.text}`}>
                         <FooterLinkItem link={link} />
                       </li>
                     ))}
