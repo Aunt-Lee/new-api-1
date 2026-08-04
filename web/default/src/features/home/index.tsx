@@ -487,10 +487,10 @@ export function Home() {
                       isChinese && 'tracking-wide md:tracking-wider'
                     )}
                   >
-                    {t('Direct access to official providers')}
+                    {t('A more stable unified LLM API')}
                     <br />
                     <span className='shine-text from-primary to-primary/70 bg-gradient-to-r bg-clip-text text-transparent'>
-                      {t('Enterprise-grade API gateway')}
+                      {t('At just 10% of the price')}
                     </span>
                   </h1>
                   <div className='mt-4 flex w-full max-w-lg flex-col items-center justify-center gap-4 md:mt-6 md:flex-row'>
