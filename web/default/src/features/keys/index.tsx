@@ -24,7 +24,6 @@ import { toast } from 'sonner'
 import { SectionPageLayout } from '@/components/layout'
 import { Button } from '@/components/ui/button'
 import { useChatPresets } from '@/features/chat/hooks/use-chat-presets'
-import { useStatus } from '@/hooks/use-status'
 import { copyToClipboard } from '@/lib/copy-to-clipboard'
 
 import { ApiKeysDialogs } from './components/api-keys-dialogs'
@@ -34,36 +33,6 @@ import { ApiKeysTable } from './components/api-keys-table'
 
 function normalizeUrl(base: string) {
   return base.replace(/\/+$/, '')
-}
-
-function buildImageApiUrl(base: string) {
-  if (!base) return ''
-
-  try {
-    const url = new URL(base)
-    if (!url.hostname.startsWith('image.')) {
-      url.hostname = `image.${url.hostname}`
-    }
-    return normalizeUrl(url.toString())
-  } catch {
-    return normalizeUrl(base)
-  }
-}
-
-function getImageApiUrl(status: ReturnType<typeof useStatus>['status']) {
-  const apiInfo = (status?.api_info ?? status?.data?.api_info) as
-    | Array<{ description?: string; route?: string; url?: string }>
-    | undefined
-
-  const imageInfo = apiInfo?.find((item) => {
-    const text = `${item.description ?? ''} ${item.route ?? ''}`.toLowerCase()
-    return (
-      text.includes('图像') || text.includes('生图') || text.includes('image')
-    )
-  })
-
-  if (imageInfo?.url) return normalizeUrl(imageInfo.url)
-  return ''
 }
 
 function ApiUrlRow(props: { label: string; value: string }) {
@@ -97,8 +66,6 @@ function ApiUrlRow(props: { label: string; value: string }) {
 }
 
 function ApiUrlDisplay() {
-  const { t } = useTranslation()
-  const { status } = useStatus()
   const { serverAddress } = useChatPresets()
   const baseUrl = useMemo(() => {
     const base =
@@ -106,16 +73,9 @@ function ApiUrlDisplay() {
       (typeof window !== 'undefined' ? window.location.origin : '')
     return normalizeUrl(base)
   }, [serverAddress])
-  const imageApiUrl = useMemo(
-    () => getImageApiUrl(status) || buildImageApiUrl(serverAddress),
-    [serverAddress, status]
-  )
-
   return (
     <div className='mb-3 flex flex-col gap-2 px-1 sm:flex-row sm:items-center'>
       <ApiUrlRow label='BaseUrl' value={baseUrl} />
-      <div className='bg-border hidden h-5 w-px sm:block' />
-      <ApiUrlRow label={t('Image API URL')} value={imageApiUrl} />
     </div>
   )
 }
