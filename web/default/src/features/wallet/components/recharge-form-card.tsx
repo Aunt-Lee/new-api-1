@@ -315,7 +315,8 @@ export function RechargeFormCard({
                       <Skeleton className='h-5 w-16' />
                     ) : (
                       <span className='text-sm font-semibold'>
-                        ¥{formatCurrency(paymentAmount)}
+                        {currencySymbol}
+                        {formatCurrency(paymentAmount)}
                       </span>
                     )}
                   </div>
