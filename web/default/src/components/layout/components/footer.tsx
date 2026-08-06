@@ -238,10 +238,10 @@ export function Footer(props: FooterProps) {
             />
             <div className='border-border/60 text-muted-foreground/45 flex w-full flex-wrap items-center justify-center gap-x-3 gap-y-1 border-t pt-4 text-xs sm:w-auto sm:justify-end sm:border-t-0 sm:border-l sm:pt-0 sm:pl-5'>
               <a
-                href='mailto:luohui360@gmail.com'
+                href='mailto:newtonrouter@gmail.com'
                 className='hover:text-foreground transition-colors duration-200'
               >
-                luohui360@gmail.com
+                newtonrouter@gmail.com
               </a>
               <LegalLinks />
               <ProjectAttribution currentYear={currentYear} inline />
@@ -271,10 +271,10 @@ export function Footer(props: FooterProps) {
               </span>
             </Link>
             <a
-              href='mailto:luohui360@gmail.com'
+              href='mailto:newtonrouter@gmail.com'
               className='text-muted-foreground/60 hover:text-foreground mt-3 inline-block text-xs leading-relaxed transition-colors'
             >
-              luohui360@gmail.com
+              newtonrouter@gmail.com
             </a>
           </div>
 
