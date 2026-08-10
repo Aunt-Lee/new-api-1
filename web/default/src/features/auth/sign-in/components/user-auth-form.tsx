@@ -168,7 +168,7 @@ export function UserAuthForm({
         await handleLoginSuccess(res.data as { id?: number } | null, redirectTo)
         toast.success(t('Welcome back!'))
       }
-    } catch (_error) {
+    } catch {
       // Errors are handled by global interceptor
     } finally {
       setIsLoading(false)
@@ -208,7 +208,7 @@ export function UserAuthForm({
       } else {
         toast.error(res?.message || loginFailedMessage)
       }
-    } catch (_error) {
+    } catch {
       toast.error(loginFailedMessage)
     } finally {
       setIsWeChatSubmitting(false)
@@ -326,8 +326,6 @@ export function UserAuthForm({
         className={cn('grid gap-4', className)}
         {...props}
       >
-        {hasAlternativeLogin && alternativeLoginMethods}
-
         {passwordLoginEnabled && (
           <>
             {/* Username Field */}
@@ -394,14 +392,14 @@ export function UserAuthForm({
           </>
         )}
 
+        {hasAlternativeLogin && alternativeLoginMethods}
+
         <LegalConsent
           status={status}
           checked={agreedToLegal}
           onCheckedChange={setAgreedToLegal}
           className='mt-1'
         />
-
-        {!hasAlternativeLogin && alternativeLoginMethods}
       </form>
 
       {hasWeChatLogin && (

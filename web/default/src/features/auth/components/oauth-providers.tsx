@@ -21,6 +21,7 @@ import { useTranslation } from 'react-i18next'
 
 import {
   IconDiscord,
+  IconGmail,
   IconGithub,
   IconLinuxDo,
   IconWeChat,
@@ -82,7 +83,7 @@ export function OAuthProviders({
   if (status?.github_oauth) {
     providerButtons.push({
       key: 'github',
-      label: githubButtonText || t('Continue with GitHub'),
+      label: githubButtonText || t('Sign in with GitHub'),
       onClick: handleGitHubLogin,
       icon: <IconGithub className='h-4 w-4' />,
       disabled: githubButtonDisabled,
@@ -101,8 +102,9 @@ export function OAuthProviders({
   if (status?.oidc_enabled) {
     providerButtons.push({
       key: 'oidc',
-      label: t('Continue with OIDC'),
+      label: t('Sign in with Gmail'),
       onClick: handleOIDCLogin,
+      icon: <IconGmail className='h-4 w-4' />,
     })
   }
 
