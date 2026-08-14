@@ -58,13 +58,19 @@ export function Pricing() {
     usdExchangeRate,
   } = usePricingData()
 
-  const visibleVendors = useMemo(
-    () =>
-      vendors.filter((vendor) =>
-        models.some((model) => model.vendor_id === vendor.id)
-      ),
-    [models, vendors]
-  )
+  const visibleVendors = useMemo(() => {
+    const vendorOrder = ['anthropic', 'openai', 'xai']
+    return vendors
+      .filter((vendor) => models.some((model) => model.vendor_id === vendor.id))
+      .sort((left, right) => {
+        const leftOrder = vendorOrder.indexOf(left.name.toLowerCase())
+        const rightOrder = vendorOrder.indexOf(right.name.toLowerCase())
+        if (leftOrder === -1 && rightOrder === -1) return 0
+        if (leftOrder === -1) return 1
+        if (rightOrder === -1) return -1
+        return leftOrder - rightOrder
+      })
+  }, [models, vendors])
   const activeVendor = visibleVendors.some(
     (vendor) => String(vendor.id) === selectedVendor
   )
@@ -148,13 +154,7 @@ export function Pricing() {
             left.model_name.localeCompare(right.model_name)
           )
         }),
-    [
-      activeRatio,
-      groupRatio,
-      modelOrder,
-      usableGroup,
-      vendorModels,
-    ]
+    [activeRatio, groupRatio, modelOrder, usableGroup, vendorModels]
   )
   const selectedModel = useMemo(
     () =>

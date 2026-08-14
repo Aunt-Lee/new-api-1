@@ -62,6 +62,7 @@ import { formatDuration, formatResetPeriod } from '@/features/subscriptions/lib'
 import { api } from '@/lib/api'
 import { formatSubscriptionPlanPrice, getCurrencyDisplay } from '@/lib/currency'
 import { formatQuota } from '@/lib/format'
+import { getLobeIcon } from '@/lib/lobe-icon'
 import {
   getLocalizedField,
   type ContentTranslations,
@@ -73,6 +74,7 @@ import { modelPricingConfig, pricingHeaderConfig } from './model-pricing-config'
 
 interface ModelPricingRow {
   name: string
+  icon: string
   inputPrice: string
   outputPrice: string
   officialInput: string
@@ -102,6 +104,15 @@ interface HomeFAQItem {
   translations?: ContentTranslations
 }
 
+const COLLAPSED_MODEL_ORDER = [
+  'claude-fable-5',
+  'claude-opus-4-8',
+  'claude-sonnet-5',
+  'gpt-5.6-sol',
+  'gpt-5.5',
+  'grok-4.6',
+] as const
+
 const TRUST_SIGNALS = [
   { label: 'Officially funded accounts', icon: BadgeCheck },
   { label: 'Direct official access', icon: Cable },
@@ -112,6 +123,13 @@ const TRUST_SIGNALS = [
 
 function hasNumber(value: number | null | undefined): value is number {
   return typeof value === 'number' && Number.isFinite(value)
+}
+
+function getHomeModelIcon(modelName: string, configuredIcon?: string): string {
+  if (configuredIcon) return configuredIcon
+  if (modelName.startsWith('claude-')) return 'Claude.Color'
+  if (modelName.startsWith('grok-')) return 'Grok.Color'
+  return 'OpenAI.Color'
 }
 
 function truncateDecimal(value: number, digits: number): number {
@@ -365,6 +383,7 @@ export function Home() {
 
           return {
             name: configItem.name,
+            icon: getHomeModelIcon(configItem.name),
             inputPrice: '-',
             outputPrice: '-',
             officialInput: formatOfficialPrice(configItem.officialInputPrice),
@@ -400,6 +419,10 @@ export function Home() {
 
         return {
           name: configItem.name,
+          icon: getHomeModelIcon(
+            configItem.name,
+            model.icon || model.vendor_icon
+          ),
           inputPrice: formatPrice(inputPriceRange?.min),
           outputPrice: formatPrice(outputPriceRange?.min),
           officialInput: formatOfficialPrice(officialInputPrice),
@@ -409,6 +432,39 @@ export function Home() {
       })
       .filter((item): item is ModelPricingRow => item !== null)
   }, [pricingData])
+
+  const visibleModelPricingRows = useMemo(() => {
+    if (!showAllPricingModels) {
+      const rowsByName = new Map(modelPricingRows.map((row) => [row.name, row]))
+      return COLLAPSED_MODEL_ORDER.map((name) => rowsByName.get(name)).filter(
+        (row): row is ModelPricingRow => row !== undefined
+      )
+    }
+
+    const familyOrder = ['claude-', 'gpt-', 'grok-']
+    const expandedGptOrder = ['gpt-5.6-sol', 'gpt-5.6-terra', 'gpt-5.5']
+    return [...modelPricingRows].sort((left, right) => {
+      const leftFamily = familyOrder.findIndex((prefix) =>
+        left.name.startsWith(prefix)
+      )
+      const rightFamily = familyOrder.findIndex((prefix) =>
+        right.name.startsWith(prefix)
+      )
+      if (leftFamily !== rightFamily) return leftFamily - rightFamily
+
+      if (left.name.startsWith('gpt-') && right.name.startsWith('gpt-')) {
+        const leftRank = expandedGptOrder.indexOf(left.name)
+        const rightRank = expandedGptOrder.indexOf(right.name)
+        if (leftRank !== -1 || rightRank !== -1) {
+          if (leftRank === -1) return 1
+          if (rightRank === -1) return -1
+          return leftRank - rightRank
+        }
+      }
+
+      return 0
+    })
+  }, [modelPricingRows, showAllPricingModels])
 
   const displayHomePageContent = async () => {
     const cached = localStorage.getItem('home_page_content') || ''
@@ -593,19 +649,19 @@ export function Home() {
                         {t('No pricing data available')}
                       </div>
                     ) : (
-                      (showAllPricingModels
-                        ? modelPricingRows
-                        : modelPricingRows.slice(0, 6)
-                      ).map((item) => (
+                      visibleModelPricingRows.map((item) => (
                         <div
                           key={item.name}
                           className='hover:bg-muted/45 grid grid-cols-2 items-center gap-3 px-5 py-4 text-sm transition-colors md:grid-cols-5 md:gap-0 md:py-3.5'
                         >
                           <span
-                            className='text-foreground col-span-2 truncate text-left font-medium md:col-span-1 md:min-w-[180px] md:pr-2'
+                            className='text-foreground col-span-2 flex min-w-0 items-center gap-2 text-left font-medium md:col-span-1 md:min-w-[180px] md:pr-2'
                             title={item.name}
                           >
-                            {item.name}
+                            <span className='shrink-0' aria-hidden='true'>
+                              {getLobeIcon(item.icon, 18)}
+                            </span>
+                            <span className='truncate'>{item.name}</span>
                           </span>
                           <span className='bg-muted/35 flex flex-col gap-1 rounded-xl p-2 text-left md:hidden'>
                             <span className='text-muted-foreground text-xs'>

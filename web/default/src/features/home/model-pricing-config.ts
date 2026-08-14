@@ -127,4 +127,10 @@ export const modelPricingConfig: ModelPricingConfig[] = [
     name: 'gpt-5.3-codex',
     cacheHit: '>93%',
   },
+  {
+    name: 'grok-4.6',
+  },
+  {
+    name: 'grok-4.5',
+  },
 ]
