@@ -60,7 +60,8 @@ import type { PricingModel } from '@/features/pricing/types'
 import { getPublicPlans } from '@/features/subscriptions/api'
 import { formatDuration, formatResetPeriod } from '@/features/subscriptions/lib'
 import { api } from '@/lib/api'
-import { formatSubscriptionPlanPrice, getCurrencyDisplay } from '@/lib/currency'
+import { formatSubscriptionPlanPrice } from '@/lib/currency'
+import { getModelPricingCurrencyDisplay } from '@/features/pricing/lib/display-currency'
 import { formatQuota } from '@/lib/format'
 import { getLobeIcon } from '@/lib/lobe-icon'
 import {
@@ -165,20 +166,17 @@ function formatTruncatedCurrency(
   return `${symbol}${formattedNumber}`
 }
 
-function formatPrice(value: number | null | undefined): string {
+function formatPrice(
+  value: number | null | undefined,
+  language?: string
+): string {
   if (!hasNumber(value) || value <= 0) return '-'
-  const { meta } = getCurrencyDisplay()
-  if (meta.kind === 'custom') {
-    return formatTruncatedCurrency(value * meta.exchangeRate, meta.symbol)
-  }
-  if (meta.kind === 'currency') {
-    return formatTruncatedCurrency(
-      value * meta.exchangeRate,
-      meta.symbol,
-      meta.currencyCode
-    )
-  }
-  return formatTruncatedCurrency(value, '$', 'USD')
+  const display = getModelPricingCurrencyDisplay(language)
+  return formatTruncatedCurrency(
+    value * display.exchangeRate,
+    display.symbol,
+    display.currencyCode
+  )
 }
 
 function getModelUsableGroupRatios(
@@ -256,9 +254,9 @@ function getConfiguredOutputPriceUSD(model: PricingModel): number | null {
   return Number.isFinite(value) && value > 0 ? value : null
 }
 
-function formatOfficialPrice(value: number | null): string {
+function formatOfficialPrice(value: number | null, language?: string): string {
   if (!hasNumber(value) || value <= 0) return '-'
-  return formatTruncatedCurrency(value, '$', 'USD')
+  return formatPrice(value, language)
 }
 
 function getDiscountPercent(actual: number, official: number): number | null {
@@ -386,8 +384,14 @@ export function Home() {
             icon: getHomeModelIcon(configItem.name),
             inputPrice: '-',
             outputPrice: '-',
-            officialInput: formatOfficialPrice(configItem.officialInputPrice),
-            officialOutput: formatOfficialPrice(configItem.officialOutputPrice),
+            officialInput: formatOfficialPrice(
+              configItem.officialInputPrice,
+              i18n.resolvedLanguage
+            ),
+            officialOutput: formatOfficialPrice(
+              configItem.officialOutputPrice,
+              i18n.resolvedLanguage
+            ),
             discount: '-',
           }
         }
@@ -423,15 +427,24 @@ export function Home() {
             configItem.name,
             model.icon || model.vendor_icon
           ),
-          inputPrice: formatPrice(inputPriceRange?.min),
-          outputPrice: formatPrice(outputPriceRange?.min),
-          officialInput: formatOfficialPrice(officialInputPrice),
-          officialOutput: formatOfficialPrice(officialOutputPrice),
+          inputPrice: formatPrice(inputPriceRange?.min, i18n.resolvedLanguage),
+          outputPrice: formatPrice(
+            outputPriceRange?.min,
+            i18n.resolvedLanguage
+          ),
+          officialInput: formatOfficialPrice(
+            officialInputPrice,
+            i18n.resolvedLanguage
+          ),
+          officialOutput: formatOfficialPrice(
+            officialOutputPrice,
+            i18n.resolvedLanguage
+          ),
           discount: formatDiscountPercent(minimumDiscount),
         }
       })
       .filter((item): item is ModelPricingRow => item !== null)
-  }, [pricingData])
+  }, [pricingData, i18n.resolvedLanguage])
 
   const visibleModelPricingRows = useMemo(() => {
     if (!showAllPricingModels) {

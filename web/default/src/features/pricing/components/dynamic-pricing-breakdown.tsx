@@ -19,6 +19,10 @@ For commercial licensing, please contact support@quantumnous.com
 import { Tag as TagIcon } from 'lucide-react'
 import { useMemo } from 'react'
 import { useTranslation } from 'react-i18next'
+import {
+  CHINESE_MODEL_PRICE_EXCHANGE_RATE,
+  isChineseModelPricingLanguage,
+} from '@/features/pricing/lib/display-currency'
 
 import { StaticDataTable } from '@/components/data-table'
 import { Badge } from '@/components/ui/badge'
@@ -159,11 +163,15 @@ export function DynamicPricingBreakdown({
   hideCacheColumns = false,
   compact = false,
 }: DynamicPricingBreakdownProps) {
-  const { t } = useTranslation()
+  const { t, i18n } = useTranslation()
   const expr = billingExpr || ''
   const currency = useSystemConfigStore((s) => s.config.currency)
 
   const { symbol, rate } = useMemo(() => {
+    if (isChineseModelPricingLanguage(i18n.resolvedLanguage)) {
+      return { symbol: '¥', rate: CHINESE_MODEL_PRICE_EXCHANGE_RATE }
+    }
+
     if (currency.quotaDisplayType === 'CNY') {
       return { symbol: '¥', rate: currency.usdExchangeRate || 7 }
     }
@@ -174,7 +182,7 @@ export function DynamicPricingBreakdown({
       }
     }
     return { symbol: '$', rate: 1 }
-  }, [currency])
+  }, [currency, i18n.resolvedLanguage])
 
   const { tiers, ruleGroups } = useMemo(() => {
     const split = splitBillingExprAndRequestRules(expr)
