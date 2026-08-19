@@ -215,6 +215,8 @@ export const STATIC_I18N_KEYS = [
   'A one-time low-cost trial for testing core models.',
   'Weekly Business',
   'A higher weekly allowance for demanding workflows.',
+  'Weekly Power',
+  'Maximum weekly capacity for intensive API usage.',
   'Mini',
   'A small credit pack for light, short-term usage.',
 
