@@ -16,6 +16,7 @@ along with this program. If not, see <https://www.gnu.org/licenses/>.
 
 For commercial licensing, please contact support@quantumnous.com
 */
+import { useQueries } from '@tanstack/react-query'
 import { useMemo, useState } from 'react'
 import { useTranslation } from 'react-i18next'
 
@@ -32,12 +33,31 @@ import { Separator } from '@/components/ui/separator'
 import { Skeleton } from '@/components/ui/skeleton'
 import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import { modelPricingConfig } from '@/features/home/model-pricing-config'
+import { getPerfMetrics } from '@/features/performance-metrics/api'
+import {
+  formatUptimePct,
+  getSuccessRateTextClass,
+} from '@/features/performance-metrics/lib/format'
 import { getLobeIcon } from '@/lib/lobe-icon'
+import { cn } from '@/lib/utils'
 
 import { ModelDetailsDrawer, PricingModelList } from './components'
+import { UptimeSparkline } from './components/model-details-uptime-sparkline'
 import { EXCLUDED_GROUPS } from './constants'
 import { usePricingData } from './hooks/use-pricing-data'
+import type { UptimeDayPoint } from './lib/mock-stats'
 import { getModelUsableGroupRatios } from './lib/model-helpers'
+
+const GROUP_PERFORMANCE_MODELS = {
+  'Claude Kiro': 'claude-sonnet-5',
+  'Claude Max 20x': 'claude-sonnet-5',
+  'Gpt Pro 20x': 'gpt-5.6-terra',
+  'Grok Heavy': 'grok-4.5',
+} as const
+
+const PERFORMANCE_SOURCE_MODELS = [
+  ...new Set(Object.values(GROUP_PERFORMANCE_MODELS)),
+]
 
 export function Pricing() {
   const { t } = useTranslation()
@@ -57,6 +77,44 @@ export function Pricing() {
     priceRate,
     usdExchangeRate,
   } = usePricingData()
+  const performanceQueries = useQueries({
+    queries: PERFORMANCE_SOURCE_MODELS.map((modelName) => ({
+      queryKey: ['perf-metrics', modelName],
+      queryFn: () => getPerfMetrics(modelName, 24),
+      staleTime: 60 * 1000,
+      retry: false,
+    })),
+  })
+  const groupSuccessRates = new Map<string, number>()
+  const groupSuccessRateSeries = new Map<string, UptimeDayPoint[]>()
+  for (const [index, modelName] of PERFORMANCE_SOURCE_MODELS.entries()) {
+    const groups = performanceQueries[index]?.data?.data.groups ?? []
+    for (const [groupName, sourceModel] of Object.entries(
+      GROUP_PERFORMANCE_MODELS
+    )) {
+      if (sourceModel !== modelName) continue
+      const performance = groups.find((group) => group.group === groupName)
+      if (performance && Number.isFinite(performance.success_rate)) {
+        groupSuccessRates.set(groupName, performance.success_rate)
+        groupSuccessRateSeries.set(
+          groupName,
+          performance.series.map((point) => {
+            const successRate = Number.isFinite(point.success_rate)
+              ? Math.round(
+                  Math.min(100, Math.max(0, point.success_rate)) * 100
+                ) / 100
+              : 0
+            return {
+              date: new Date(point.ts * 1000).toISOString(),
+              uptime_pct: successRate,
+              incidents: successRate < 100 ? 1 : 0,
+              outage_minutes: 0,
+            }
+          })
+        )
+      }
+    }
+  }
 
   const visibleVendors = useMemo(() => {
     const vendorOrder = ['anthropic', 'openai', 'xai']
@@ -136,6 +194,10 @@ export function Pricing() {
     selectedRatio !== null && availableRatios.includes(selectedRatio)
       ? selectedRatio
       : (availableRatios[0] ?? 1)
+  const activePerformanceGroups =
+    ratioOptions
+      .find((option) => option.ratio === activeRatio)
+      ?.groups.filter((group) => group in GROUP_PERFORMANCE_MODELS) ?? []
   const visibleModels = useMemo(
     () =>
       vendorModels
@@ -219,30 +281,80 @@ export function Pricing() {
                       <div className='text-muted-foreground text-xs font-medium'>
                         {t('Group')}
                       </div>
-                      <div className='overflow-x-auto overflow-y-hidden pb-1'>
-                        <Tabs
-                          value={String(activeRatio)}
-                          onValueChange={(value) =>
-                            setSelectedRatio(Number(value))
-                          }
-                        >
-                          <TabsList className='h-10 w-max justify-start'>
-                            {ratioOptions.map((option) => (
-                              <TabsTrigger
-                                key={option.ratio}
-                                value={String(option.ratio)}
-                                className='h-9 flex-none gap-1 px-3'
-                              >
-                                {option.groups.length > 0 && (
-                                  <span>{option.groups.join(' / ')}</span>
-                                )}
-                                <span className='font-mono'>
-                                  ({option.ratio}x)
-                                </span>
-                              </TabsTrigger>
-                            ))}
-                          </TabsList>
-                        </Tabs>
+                      <div className='flex min-w-0 items-center gap-3'>
+                        <div className='min-w-0 flex-1 overflow-x-auto overflow-y-hidden pb-1'>
+                          <Tabs
+                            value={String(activeRatio)}
+                            onValueChange={(value) =>
+                              setSelectedRatio(Number(value))
+                            }
+                          >
+                            <TabsList className='h-10 w-max justify-start'>
+                              {ratioOptions.map((option) => (
+                                <TabsTrigger
+                                  key={option.ratio}
+                                  value={String(option.ratio)}
+                                  className='h-9 flex-none gap-1.5 px-3'
+                                >
+                                  {option.groups.length > 0 && (
+                                    <span className='flex items-center gap-1.5'>
+                                      {option.groups.map((group, index) => (
+                                        <span key={group}>
+                                          {index > 0 && (
+                                            <span className='text-muted-foreground mr-1.5'>
+                                              /
+                                            </span>
+                                          )}
+                                          {group}
+                                        </span>
+                                      ))}
+                                    </span>
+                                  )}
+                                  <span className='font-mono'>
+                                    ({option.ratio}x)
+                                  </span>
+                                </TabsTrigger>
+                              ))}
+                            </TabsList>
+                          </Tabs>
+                        </div>
+                        {activePerformanceGroups.length > 0 && (
+                          <div className='flex shrink-0 items-center gap-2 border-l pl-3 text-xs'>
+                            <span className='text-muted-foreground'>
+                              {t('Success rate')}
+                            </span>
+                            {activePerformanceGroups.map((group) => {
+                              const successRate = groupSuccessRates.get(group)
+                              const successRateSeries =
+                                groupSuccessRateSeries.get(group) ?? []
+
+                              return (
+                                <div
+                                  key={group}
+                                  className='flex items-center gap-2'
+                                >
+                                  {successRateSeries.length > 0 && (
+                                    <UptimeSparkline
+                                      size='sm'
+                                      showOverall={false}
+                                      series={successRateSeries}
+                                    />
+                                  )}
+                                  <span
+                                    className={cn(
+                                      'font-mono font-medium tabular-nums',
+                                      getSuccessRateTextClass(
+                                        successRate ?? Number.NaN
+                                      )
+                                    )}
+                                  >
+                                    {formatUptimePct(successRate ?? Number.NaN)}
+                                  </span>
+                                </div>
+                              )
+                            })}
+                          </div>
+                        )}
                       </div>
                     </div>
                   </>
