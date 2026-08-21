@@ -81,7 +81,9 @@ export function Pricing() {
     queries: PERFORMANCE_SOURCE_MODELS.map((modelName) => ({
       queryKey: ['perf-metrics', modelName],
       queryFn: () => getPerfMetrics(modelName, 24),
-      staleTime: 60 * 1000,
+      staleTime: 5 * 60 * 1000,
+      refetchInterval: 5 * 60 * 1000,
+      refetchOnMount: 'always',
       retry: false,
     })),
   })
