@@ -56,12 +56,12 @@ import { Separator } from '@/components/ui/separator'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import { getPricing } from '@/features/pricing/api'
 import { QUOTA_TYPE_VALUES } from '@/features/pricing/constants'
+import { getModelPricingCurrencyDisplay } from '@/features/pricing/lib/display-currency'
 import type { PricingModel } from '@/features/pricing/types'
 import { getPublicPlans } from '@/features/subscriptions/api'
 import { formatDuration, formatResetPeriod } from '@/features/subscriptions/lib'
 import { api } from '@/lib/api'
 import { formatSubscriptionPlanPrice } from '@/lib/currency'
-import { getModelPricingCurrencyDisplay } from '@/features/pricing/lib/display-currency'
 import { formatQuota } from '@/lib/format'
 import { getLobeIcon } from '@/lib/lobe-icon'
 import {
@@ -99,7 +99,7 @@ interface HomeStatusResponse {
 }
 
 interface HomeFAQItem {
-  id?: number
+  id?: number | string
   question: string
   answer: string
   translations?: ContentTranslations
@@ -293,13 +293,24 @@ export function Home() {
     statusData?.data?.serverAddress ||
     (typeof window !== 'undefined' ? window.location.origin : '')
   const faqItems = useMemo(() => {
-    const items =
-      statusData?.data?.faq_enabled === false ? [] : statusData?.data?.faq || []
-    return items.map((item) => ({
+    if (!statusData?.data || statusData.data.faq_enabled === false) return []
+
+    const configuredItems = (statusData.data.faq || []).map((item) => ({
       ...item,
       question: getLocalizedField(item, 'question', i18n.resolvedLanguage, t),
       answer: getLocalizedField(item, 'answer', i18n.resolvedLanguage, t),
     }))
+
+    return [
+      {
+        id: 'about-us',
+        question: t('About Us'),
+        answer: t(
+          'NewtonRouter is a unified AI model API platform. With a single API address and key, you can access models such as GPT, Claude, and Grok. We are committed to providing a stable, affordable, and convenient model-switching experience.'
+        ),
+      },
+      ...configuredItems,
+    ]
   }, [i18n.resolvedLanguage, statusData, t])
   const { data: pricingData } = useQuery<HomePricingResponse>({
     queryKey: ['home-pricing'],
