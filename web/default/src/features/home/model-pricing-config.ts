@@ -133,4 +133,7 @@ export const modelPricingConfig: ModelPricingConfig[] = [
   {
     name: 'grok-4.5',
   },
+  {
+    name: 'grok-4.3',
+  },
 ]
