@@ -1,5 +1,90 @@
 <div align="center">
 
+# NewtonRouter
+
+### 一个 API 地址，连接 GPT、Claude、Grok 等主流 AI 模型
+
+不用为不同模型重复接入 SDK，也不用反复修改客户端配置。创建一个密钥，即可在兼容 OpenAI API 的客户端、应用和自动化工具中切换模型。
+
+<p>
+  <a href="https://newtonrouter.com"><img src="https://img.shields.io/badge/Website-newtonrouter.com-2563eb?style=for-the-badge&logo=googlechrome&logoColor=white" alt="NewtonRouter website"></a>
+  <img src="https://img.shields.io/badge/API-OpenAI_Compatible-10a37f?style=for-the-badge&logo=openai&logoColor=white" alt="OpenAI compatible API">
+  <img src="https://img.shields.io/badge/Models-GPT_%7C_Claude_%7C_Grok-111827?style=for-the-badge" alt="GPT, Claude and Grok models">
+</p>
+
+<p>
+  <img src="https://img.shields.io/badge/GPT-OpenAI-412991?style=for-the-badge&logo=openai&logoColor=white" alt="GPT by OpenAI">
+  <img src="https://img.shields.io/badge/Claude-Anthropic-D97757?style=for-the-badge&logo=anthropic&logoColor=white" alt="Claude by Anthropic">
+  <img src="https://img.shields.io/badge/Grok-xAI-000000?style=for-the-badge&logo=x&logoColor=white" alt="Grok by xAI">
+</p>
+
+[访问官网](https://newtonrouter.com) · [查看模型与价格](https://newtonrouter.com/pricing) · [选择套餐](https://newtonrouter.com/plans) · [立即注册](https://newtonrouter.com/register)
+
+<sub>GPT/OpenAI、Claude/Anthropic、Grok/xAI 的名称及商标归各自权利人所有，仅用于标识可接入的模型，不代表官方合作或背书。</sub>
+
+</div>
+
+## ✨ 为什么选择 NewtonRouter
+
+| 图标 | 能力 | 说明 |
+|:---:|---|---|
+| 🔗 | 统一接口 | 一个 API 地址和密钥即可调用多个模型，减少重复配置和迁移成本。 |
+| 🧠 | 模型选择 | 支持 GPT、Claude、Grok 等模型，可根据效果、速度和预算随时切换。 |
+| 💳 | 价格清晰 | 网站直接展示模型价格、分组可用性和历史成功率，选择渠道前先看数据。 |
+| ⚡ | 接入简单 | 兼容常见的 OpenAI API 调用方式，已有客户端通常只需替换 Base URL 和 API Key。 |
+| 📊 | 用量可查 | 控制台提供余额、调用记录和消费明细，方便核对每一次请求。 |
+| 🌐 | 多语言界面 | 支持简体中文、繁体中文、英语、法语、日语、俄语和越南语。 |
+
+## 🎯 适合谁使用
+
+- 👨‍💻 个人开发者：测试不同模型，减少维护多套账号和 SDK 的时间。
+- 🧩 AI 应用团队：为聊天、代码生成、内容处理等功能接入统一模型接口。
+- 🤖 自动化用户：在工作流、机器人和第三方客户端中快速配置模型服务。
+- 📉 需要控制成本的用户：对比模型价格和成功率后再选择合适的模型与套餐。
+
+## 🚀 三步开始使用
+
+1. 在 [NewtonRouter](https://newtonrouter.com/register) 注册并登录。
+2. 按需充值或购买套餐，然后在控制台创建 API Key。
+3. 将客户端的 Base URL 设置为 `https://newtonrouter.com/v1`，填入 API Key 和模型名称。
+
+兼容 OpenAI Chat Completions 的调用示例：
+
+```bash
+curl https://newtonrouter.com/v1/chat/completions \
+  -H "Authorization: Bearer YOUR_API_KEY" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "model": "gpt-5.6-sol",
+    "messages": [
+      {"role": "user", "content": "Hello"}
+    ]
+  }'
+```
+
+可用模型和计费规则以网站的[模型价格页面](https://newtonrouter.com/pricing)为准。
+
+## 🛡️ 服务说明
+
+NewtonRouter 提供 AI 模型统一接口、模型路由、用量统计、账户与套餐管理等服务。请求会被转发给所选模型对应的第三方供应商，供应商可能按照自己的条款处理请求内容。请勿提交密码、支付卡信息、证件号码或其他不必要的敏感数据。
+
+- 🌍 官网：[newtonrouter.com](https://newtonrouter.com)
+- ✉️ 服务支持：[newtonrouter@gmail.com](mailto:newtonrouter@gmail.com)
+- 𝕏 社交账号：[x.com/newtonrouter](https://x.com/newtonrouter)
+- 📄 [用户协议](https://newtonrouter.com/user-agreement)
+- 🔒 [隐私政策](https://newtonrouter.com/privacy-policy)
+
+## 📦 开源项目说明
+
+NewtonRouter 的网关系统基于 **New API** 开源项目构建。New API 由 **QuantumNous** 及项目贡献者维护，并按照 GNU Affero General Public License v3.0 发布。为完整保留原项目介绍、作者归属、部署文档和许可证信息，原始 README 内容如下。
+
+---
+
+<details>
+<summary><strong>查看 New API 原项目 README 与完整文档</strong></summary>
+
+<div align="center">
+
 ![new-api](/web/default/public/logo.png)
 
 # New API
@@ -488,3 +573,5 @@ If this project is helpful to you, welcome to give us a ⭐️ Star！
 <sub>Built with ❤️ by QuantumNous</sub>
 
 </div>
+
+</details>
