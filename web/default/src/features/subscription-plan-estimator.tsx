@@ -37,7 +37,16 @@ import {
 import { Progress } from '@/components/ui/progress'
 import { Skeleton } from '@/components/ui/skeleton'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
-import { featuredModelNames } from '@/features/home/model-pricing-config'
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipProvider,
+  TooltipTrigger,
+} from '@/components/ui/tooltip'
+import {
+  featuredModelNames,
+  modelPricingConfig,
+} from '@/features/home/model-pricing-config'
 import { getPricing } from '@/features/pricing/api'
 import { getModelUsableGroupRatios } from '@/features/pricing/lib/model-helpers'
 import type { PricingModel } from '@/features/pricing/types'
@@ -56,10 +65,78 @@ import { getLocalizedField } from '@/lib/localized-content'
 import { cn } from '@/lib/utils'
 import { useAuthStore } from '@/stores/auth-store'
 
+interface CapacityEstimate {
+  label: string
+  value: number | null
+}
+
+interface CapacityProgressProps {
+  actual: CapacityEstimate
+  indicatorClassName?: string
+  label: string
+  maxCapacity: number
+  modelName: string
+  official: CapacityEstimate
+}
+
 function formatTokenCapacity(value: number): string {
   if (!Number.isFinite(value)) return '∞'
   if (value <= 0) return '-'
   return `${formatTokens(Math.floor(value))} Token`
+}
+
+function getProgressValue(value: number | null, maxCapacity: number): number {
+  if (value === Number.POSITIVE_INFINITY) return 100
+  if (value === null || maxCapacity <= 0) return 0
+  return Math.min((value / maxCapacity) * 100, 100)
+}
+
+function CapacityProgress(props: CapacityProgressProps) {
+  const { t } = useTranslation()
+  const officialProgress = getProgressValue(
+    props.official.value,
+    props.maxCapacity
+  )
+
+  return (
+    <div className='grid grid-cols-[4.5rem_minmax(0,1fr)_7rem] items-center gap-3'>
+      <span className='text-muted-foreground text-xs font-medium'>
+        {props.label}
+      </span>
+      <div className='relative'>
+        <Progress
+          value={getProgressValue(props.actual.value, props.maxCapacity)}
+          aria-label={`${props.modelName} ${props.label}`}
+          className={cn(
+            '[&_[data-slot=progress-track]]:h-2.5',
+            props.indicatorClassName
+          )}
+        />
+        {props.official.value !== null && (
+          <TooltipProvider delay={100}>
+            <Tooltip>
+              <TooltipTrigger
+                render={
+                  <button
+                    type='button'
+                    aria-label={`${t('Official')}: ${props.official.label}`}
+                    className='border-background bg-foreground focus-visible:ring-ring absolute top-1/2 z-10 h-5 w-1.5 -translate-x-1/2 -translate-y-1/2 rounded-full border-2 shadow-sm outline-none focus-visible:ring-2'
+                    style={{ left: `${officialProgress}%` }}
+                  />
+                }
+              />
+              <TooltipContent>
+                {t('Official')}: {props.official.label}
+              </TooltipContent>
+            </Tooltip>
+          </TooltipProvider>
+        )}
+      </div>
+      <span className='text-right text-sm font-semibold tabular-nums'>
+        {props.actual.label}
+      </span>
+    </div>
+  )
 }
 
 export function Plans() {
@@ -161,10 +238,18 @@ export function Plans() {
     const pricingMap = new Map(
       (pricingQuery.data?.data || []).map((model) => [model.model_name, model])
     )
-    return featuredModelNames.map((modelName) => ({
-      modelName,
-      pricing: pricingMap.get(modelName),
-    }))
+    const configMap = new Map(
+      modelPricingConfig.map((model) => [model.name, model])
+    )
+    return featuredModelNames.map((modelName) => {
+      const config = configMap.get(modelName)
+      return {
+        modelName,
+        officialInputPrice: config?.officialInputPrice,
+        officialOutputPrice: config?.officialOutputPrice,
+        pricing: pricingMap.get(modelName),
+      }
+    })
   }, [pricingQuery.data])
 
   const purchaseCountMap = useMemo(() => {
@@ -191,8 +276,10 @@ export function Plans() {
 
   const getCapacity = (
     model: PricingModel | undefined,
-    type: 'input' | 'output'
-  ): { label: string; value: number | null } => {
+    type: 'input' | 'output',
+    pricingMode: 'plan' | 'official' = 'plan',
+    officialPrice?: number
+  ): CapacityEstimate => {
     if (!selectedPlan || !model) {
       return { label: t('Pricing unavailable'), value: null }
     }
@@ -206,17 +293,28 @@ export function Plans() {
       }
     }
 
-    const modelGroupRatios = getModelUsableGroupRatios(
-      model,
-      pricingQuery.data?.group_ratio || {},
-      pricingQuery.data?.usable_group || {}
-    )
-    const effectiveGroupRatio = selectedPlan.upgrade_group
-      ? pricingQuery.data?.group_ratio?.[selectedPlan.upgrade_group]
-      : Math.min(...modelGroupRatios)
     const completionRatio = type === 'output' ? model.completion_ratio : 1
-    const costPerToken =
-      model.model_ratio * completionRatio * (effectiveGroupRatio || 1)
+    let costPerToken = model.model_ratio * completionRatio
+    if (pricingMode === 'official') {
+      if (
+        typeof officialPrice === 'number' &&
+        Number.isFinite(officialPrice) &&
+        officialPrice > 0
+      ) {
+        // Model ratio uses half of the published USD price per 1M tokens.
+        costPerToken = officialPrice / 2
+      }
+    } else {
+      const modelGroupRatios = getModelUsableGroupRatios(
+        model,
+        pricingQuery.data?.group_ratio || {},
+        pricingQuery.data?.usable_group || {}
+      )
+      const effectiveGroupRatio = selectedPlan.upgrade_group
+        ? pricingQuery.data?.group_ratio?.[selectedPlan.upgrade_group]
+        : Math.min(...modelGroupRatios)
+      costPerToken *= effectiveGroupRatio || 1
+    }
     if (!Number.isFinite(costPerToken) || costPerToken <= 0) {
       return { label: t('Pricing unavailable'), value: null }
     }
@@ -224,23 +322,48 @@ export function Plans() {
     return { label: formatTokenCapacity(value), value }
   }
 
-  const capacityRows = modelPricing.map((item) => ({
-    ...item,
-    input: getCapacity(item.pricing, 'input'),
-    output: getCapacity(item.pricing, 'output'),
-  }))
+  const capacityRows = modelPricing
+    .map((item) => ({
+      ...item,
+      input: getCapacity(item.pricing, 'input'),
+      output: getCapacity(item.pricing, 'output'),
+      officialInput: getCapacity(
+        item.pricing,
+        'input',
+        'official',
+        item.officialInputPrice
+      ),
+      officialOutput: getCapacity(
+        item.pricing,
+        'output',
+        'official',
+        item.officialOutputPrice
+      ),
+    }))
+    .sort((left, right) => {
+      if (left.input.value !== right.input.value) {
+        if (left.input.value === null) return 1
+        if (right.input.value === null) return -1
+        return right.input.value - left.input.value
+      }
+      if (left.output.value !== right.output.value) {
+        if (left.output.value === null) return 1
+        if (right.output.value === null) return -1
+        return right.output.value - left.output.value
+      }
+      return 0
+    })
   const finiteCapacityValues = capacityRows.flatMap((row) =>
-    [row.input.value, row.output.value].filter(
+    [
+      row.input.value,
+      row.output.value,
+      row.officialInput.value,
+      row.officialOutput.value,
+    ].filter(
       (value): value is number => value !== null && Number.isFinite(value)
     )
   )
   const maxCapacity = Math.max(...finiteCapacityValues, 0)
-
-  const getProgressValue = (value: number | null): number => {
-    if (value === Number.POSITIVE_INFINITY) return 100
-    if (value === null || maxCapacity <= 0) return 0
-    return (value / maxCapacity) * 100
-  }
 
   const isLoading = plansQuery.isLoading || pricingQuery.isLoading
   const hasError = plansQuery.isError || pricingQuery.isError
@@ -471,6 +594,13 @@ export function Plans() {
                             ? t('Unlimited Quota')
                             : formatQuota(selectedPlan.total_amount)}
                         </Badge>
+                        <Badge variant='outline'>
+                          <span
+                            aria-hidden='true'
+                            className='bg-foreground h-3 w-1 rounded-full'
+                          />
+                          {t('Official')}
+                        </Badge>
                       </div>
                     </div>
                   </CardHeader>
@@ -484,32 +614,21 @@ export function Plans() {
                           {item.modelName}
                         </h3>
                         <div className='space-y-3'>
-                          <div className='grid grid-cols-[4.5rem_minmax(0,1fr)_7rem] items-center gap-3'>
-                            <span className='text-muted-foreground text-xs font-medium'>
-                              {t('Maximum input Tokens')}
-                            </span>
-                            <Progress
-                              value={getProgressValue(item.input.value)}
-                              aria-label={`${item.modelName} ${t('Maximum input Tokens')}`}
-                              className='[&_[data-slot=progress-track]]:h-2.5'
-                            />
-                            <span className='text-right text-sm font-semibold tabular-nums'>
-                              {item.input.label}
-                            </span>
-                          </div>
-                          <div className='grid grid-cols-[4.5rem_minmax(0,1fr)_7rem] items-center gap-3'>
-                            <span className='text-muted-foreground text-xs font-medium'>
-                              {t('Maximum output Tokens')}
-                            </span>
-                            <Progress
-                              value={getProgressValue(item.output.value)}
-                              aria-label={`${item.modelName} ${t('Maximum output Tokens')}`}
-                              className='[&_[data-slot=progress-indicator]]:bg-chart-2 [&_[data-slot=progress-track]]:h-2.5'
-                            />
-                            <span className='text-right text-sm font-semibold tabular-nums'>
-                              {item.output.label}
-                            </span>
-                          </div>
+                          <CapacityProgress
+                            modelName={item.modelName}
+                            label={t('Maximum input Tokens')}
+                            actual={item.input}
+                            official={item.officialInput}
+                            maxCapacity={maxCapacity}
+                          />
+                          <CapacityProgress
+                            modelName={item.modelName}
+                            label={t('Maximum output Tokens')}
+                            actual={item.output}
+                            official={item.officialOutput}
+                            maxCapacity={maxCapacity}
+                            indicatorClassName='[&_[data-slot=progress-indicator]]:bg-chart-2'
+                          />
                         </div>
                       </div>
                     ))}

@@ -59,6 +59,7 @@ export const featuredModelNames = [
   'claude-sonnet-5',
   'gpt-5.6-sol',
   'gpt-5.5',
+  'grok-5.6',
 ] as const
 
 /**
