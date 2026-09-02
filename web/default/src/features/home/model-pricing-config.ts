@@ -71,7 +71,7 @@ export const featuredModelNames = [
  */
 export const modelPricingConfig: ModelPricingConfig[] = [
   {
-    name: 'claude-5-1',
+    name: 'claude-fable-5-1',
     cacheHit: '>93%',
   },
   {
