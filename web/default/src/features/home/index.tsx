@@ -393,7 +393,7 @@ export function Home() {
 
           return {
             name: configItem.name,
-            icon: getHomeModelIcon(configItem.name),
+            icon: getHomeModelIcon(configItem.name, configItem.icon),
             inputPrice: '-',
             outputPrice: '-',
             officialInput: formatOfficialPrice(
@@ -437,7 +437,7 @@ export function Home() {
           name: configItem.name,
           icon: getHomeModelIcon(
             configItem.name,
-            model.icon || model.vendor_icon
+            configItem.icon || model.icon || model.vendor_icon
           ),
           inputPrice: formatPrice(inputPriceRange?.min, i18n.resolvedLanguage),
           outputPrice: formatPrice(

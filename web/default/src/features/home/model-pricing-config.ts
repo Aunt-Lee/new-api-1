@@ -23,6 +23,7 @@ For commercial licensing, please contact support@quantumnous.com
 
 export interface ModelPricingConfig {
   name: string
+  icon?: string
   cacheHit?: string
   officialInputPrice?: number
   officialOutputPrice?: number
@@ -59,12 +60,13 @@ export const featuredModelNames = [
   'claude-sonnet-5',
   'gpt-5.6-sol',
   'gpt-5.5',
-  'grok-5.6',
+  'grok-4.6',
 ] as const
 
 /**
  * 配置首页需要展示的模型
  * - name: 模型名称
+ * - icon: 首页模型图标覆盖值
  * - cacheHit: 缓存命中展示文本
  *
  * 价格从后台 /api/pricing 的模型倍率配置读取，不在前端写死。
@@ -72,6 +74,7 @@ export const featuredModelNames = [
 export const modelPricingConfig: ModelPricingConfig[] = [
   {
     name: 'claude-fable-5-1',
+    icon: 'Anthropic',
     cacheHit: '>93%',
   },
   {
