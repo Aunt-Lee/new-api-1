@@ -106,6 +106,7 @@ interface HomeFAQItem {
 }
 
 const COLLAPSED_MODEL_ORDER = [
+  'claude-5-1',
   'claude-fable-5',
   'claude-opus-4-8',
   'claude-sonnet-5',
