@@ -110,8 +110,8 @@ const COLLAPSED_MODEL_ORDER = [
   'claude-fable-5',
   'claude-opus-4-8',
   'claude-sonnet-5',
+  'gpt-6-astra',
   'gpt-5.6-sol',
-  'gpt-5.5',
   'grok-4.6',
 ] as const
 
@@ -467,7 +467,12 @@ export function Home() {
     }
 
     const familyOrder = ['claude-', 'gpt-', 'grok-']
-    const expandedGptOrder = ['gpt-5.6-sol', 'gpt-5.6-terra', 'gpt-5.5']
+    const expandedGptOrder = [
+      'gpt-6-astra',
+      'gpt-5.6-sol',
+      'gpt-5.6-terra',
+      'gpt-5.5',
+    ]
     return [...modelPricingRows].sort((left, right) => {
       const leftFamily = familyOrder.findIndex((prefix) =>
         left.name.startsWith(prefix)

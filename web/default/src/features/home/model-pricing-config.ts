@@ -58,6 +58,7 @@ export const featuredModelNames = [
   'claude-opus-5',
   'claude-opus-4-8',
   'claude-sonnet-5',
+  'gpt-6-astra',
   'gpt-5.6-sol',
   'gpt-5.5',
   'grok-4.6',
@@ -93,6 +94,10 @@ export const modelPricingConfig: ModelPricingConfig[] = [
   },
   {
     name: 'claude-sonnet-5',
+    cacheHit: '>93%',
+  },
+  {
+    name: 'gpt-6-astra',
     cacheHit: '>93%',
   },
   {
