@@ -17,6 +17,7 @@ along with this program. If not, see <https://www.gnu.org/licenses/>.
 For commercial licensing, please contact support@quantumnous.com
 */
 import { Crown, CalendarClock, Package } from 'lucide-react'
+import { SiWechat } from 'react-icons/si'
 import { useState, useEffect } from 'react'
 import { useTranslation } from 'react-i18next'
 import { toast } from 'sonner'
@@ -402,6 +403,21 @@ export function SubscriptionPurchaseDialog(props: Props) {
                     disabled={paying || limitReached}
                   >
                     Waffo Pancake
+                  </Button>
+                )}
+                {hasWaffoPancake && (
+                  <Button
+                    variant='outline'
+                    className='flex-1'
+                    onClick={handlePayWaffoPancake}
+                    disabled={paying || limitReached}
+                    aria-label={t('WeChat Pay')}
+                  >
+                    <SiWechat
+                      className='h-4 w-4'
+                      style={{ color: '#07C160' }}
+                    />
+                    {t('WeChat Pay')}
                   </Button>
                 )}
               </div>
