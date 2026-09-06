@@ -164,23 +164,22 @@ export default function SettingsPaymentGateway(props) {
             icon={<BookOpen size={16} />}
             description={
               <>
-                Stripe 密钥、Webhook 等设置请
+                Configure Stripe keys, webhooks, and related settings{' '}
                 <a
                   href='https://dashboard.stripe.com/developers'
                   target='_blank'
                   rel='noreferrer'
                 >
-                  点击此处
-                </a>
-                进行设置，建议先在
+                  here
+                </a>. We recommend testing first in the
                 <a
                   href='https://dashboard.stripe.com/test/developers'
                   target='_blank'
                   rel='noreferrer'
                 >
-                  测试环境
+                  test environment
                 </a>
-                完成联调。
+                before going live.
                 <br />
                 {t('回调地址')}：
                 {props.options.ServerAddress
@@ -194,7 +193,7 @@ export default function SettingsPaymentGateway(props) {
           <Banner
             type='warning'
             icon={<TriangleAlert size={16} />}
-            description='需要包含事件：checkout.session.completed 和 checkout.session.expired'
+            description='The webhook must include these events: checkout.session.completed and checkout.session.expired'
             style={{ marginBottom: 16 }}
           />
           <Row gutter={{ xs: 8, sm: 16, md: 24, lg: 24, xl: 24, xxl: 24 }}>

@@ -76,11 +76,11 @@ const KEY_SOURCE_TYPES = [
 ];
 
 const CONTEXT_KEY_PRESETS = [
-  { key: 'id', label: 'id（用户 ID）' },
+  { key: 'id', label: 'id (user ID)' },
   { key: 'token_id', label: 'token_id' },
   { key: 'token_key', label: 'token_key' },
   { key: 'token_group', label: 'token_group' },
-  { key: 'group', label: 'group（using_group）' },
+  { key: 'group', label: 'group (using_group)' },
   { key: 'username', label: 'username' },
   { key: 'user_group', label: 'user_group' },
   { key: 'user_email', label: 'user_email' },
@@ -182,16 +182,16 @@ const parseOptionalObjectJson = (jsonString, label) => {
   const raw = (jsonString || '').trim();
   if (!raw) return { ok: true, value: null };
   if (!verifyJSON(raw)) {
-    return { ok: false, message: `${label} JSON 格式不正确` };
+    return { ok: false, message: `${label} has invalid JSON` };
   }
   try {
     const parsed = JSON.parse(raw);
     if (!parsed || typeof parsed !== 'object' || Array.isArray(parsed)) {
-      return { ok: false, message: `${label} 必须是 JSON 对象` };
+      return { ok: false, message: `${label} must be a JSON object` };
     }
     return { ok: true, value: parsed };
   } catch (error) {
-    return { ok: false, message: `${label} JSON 格式不正确` };
+    return { ok: false, message: `${label} has invalid JSON` };
   }
 };
 
@@ -661,18 +661,18 @@ export default function SettingsChannelAffinity(props) {
 
   const validateKeySources = (keySources) => {
     const xs = (keySources || []).map(normalizeKeySource).filter((x) => x.type);
-    if (xs.length === 0) return { ok: false, message: 'Key 来源不能为空' };
+    if (xs.length === 0) return { ok: false, message: 'At least one key source is required' };
     for (const x of xs) {
       if (
         x.type === 'context_int' ||
         x.type === 'context_string' ||
         x.type === 'request_header'
       ) {
-        if (!x.key) return { ok: false, message: 'Key 不能为空' };
+        if (!x.key) return { ok: false, message: 'Key is required' };
       } else if (x.type === 'gjson') {
-        if (!x.path) return { ok: false, message: 'Path 不能为空' };
+        if (!x.path) return { ok: false, message: 'Path is required' };
       } else {
-        return { ok: false, message: 'Key 来源类型不合法' };
+        return { ok: false, message: 'Invalid key source type' };
       }
     }
     return { ok: true, value: xs };
@@ -746,7 +746,7 @@ export default function SettingsChannelAffinity(props) {
       );
       const paramTemplateValidation = parseOptionalObjectJson(
         paramTemplateDraft,
-        '参数覆盖模板',
+        'Parameter override template',
       );
       if (!paramTemplateValidation.ok) {
         return showError(t(paramTemplateValidation.message));
@@ -953,7 +953,7 @@ export default function SettingsChannelAffinity(props) {
                   field={KEY_MAX_ENTRIES}
                   label={t('最大条目数')}
                   min={0}
-                  placeholder='例如 100000…'
+                  placeholder='e.g. 100000...'
                   extraText={
                     <Text type='tertiary' size='small'>
                       {t(
@@ -974,7 +974,7 @@ export default function SettingsChannelAffinity(props) {
                   field={KEY_DEFAULT_TTL}
                   label={t('默认 TTL（秒）')}
                   min={0}
-                  placeholder='例如 3600…'
+                  placeholder='e.g. 3600...'
                   extraText={
                     <Text type='tertiary' size='small'>
                       {t(
@@ -1125,7 +1125,7 @@ export default function SettingsChannelAffinity(props) {
             field='name'
             label={t('名称')}
             extraText={t('规则名称（可读性更好，也会出现在管理侧日志中）。')}
-            placeholder='例如 prefer-by-conversation-id…'
+            placeholder='e.g. prefer-by-conversation-id...'
             rules={[{ required: true }]}
             onChange={(value) =>
               setEditingRule((prev) => ({ ...(prev || {}), name: value }))
@@ -1220,7 +1220,7 @@ export default function SettingsChannelAffinity(props) {
                   <Form.InputNumber
                     field='ttl_seconds'
                     label={t('TTL（秒，0 表示默认）')}
-                    placeholder='例如 600…'
+                    placeholder='e.g. 600...'
                     min={0}
                     extraText={
                       <Text type='tertiary' size='small'>

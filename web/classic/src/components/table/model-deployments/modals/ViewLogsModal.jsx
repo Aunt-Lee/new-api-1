@@ -241,13 +241,13 @@ const ViewLogsModal = ({ visible, onCancel, deployment, t }) => {
     const normalized =
       typeof status === 'string' ? status.trim().toLowerCase() : '';
     const statusMap = {
-      running: { color: 'green', label: '运行中' },
-      pending: { color: 'orange', label: '准备中' },
-      deployed: { color: 'blue', label: '已部署' },
-      failed: { color: 'red', label: '失败' },
-      destroyed: { color: 'red', label: '已销毁' },
-      stopping: { color: 'orange', label: '停止中' },
-      terminated: { color: 'grey', label: '已终止' },
+      running: { color: 'green', label: 'Running' },
+      pending: { color: 'orange', label: 'Preparing' },
+      deployed: { color: 'blue', label: 'Deployed' },
+      failed: { color: 'red', label: 'Failed' },
+      destroyed: { color: 'red', label: 'Destroyed' },
+      stopping: { color: 'orange', label: 'Stopping' },
+      terminated: { color: 'grey', label: 'Terminated' },
     };
 
     const config = statusMap[normalized] || { color: 'grey', label: status };

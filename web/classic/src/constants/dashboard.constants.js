@@ -38,9 +38,9 @@ export const ILLUSTRATION_SIZE = { width: 96, height: 96 };
 
 // ========== 时间相关常量 ==========
 export const TIME_OPTIONS = [
-  { label: '小时', value: 'hour' },
-  { label: '天', value: 'day' },
-  { label: '周', value: 'week' },
+  { label: 'Hour', value: 'hour' },
+  { label: 'Day', value: 'day' },
+  { label: 'Week', value: 'week' },
 ];
 
 export const DEFAULT_TIME_INTERVALS = {
@@ -119,19 +119,19 @@ export const DEFAULT_CHART_SPECS = {
 
 // ========== 公告图例数据 ==========
 export const ANNOUNCEMENT_LEGEND_DATA = [
-  { color: 'grey', label: '默认', type: 'default' },
-  { color: 'blue', label: '进行中', type: 'ongoing' },
-  { color: 'green', label: '成功', type: 'success' },
-  { color: 'orange', label: '警告', type: 'warning' },
-  { color: 'red', label: '异常', type: 'error' },
+  { color: 'grey', label: 'Default', type: 'default' },
+  { color: 'blue', label: 'Ongoing', type: 'ongoing' },
+  { color: 'green', label: 'Success', type: 'success' },
+  { color: 'orange', label: 'Warning', type: 'warning' },
+  { color: 'red', label: 'Error', type: 'error' },
 ];
 
 // ========== Uptime 状态映射 ==========
 export const UPTIME_STATUS_MAP = {
-  1: { color: '#10b981', label: '正常', text: '可用率' }, // UP
-  0: { color: '#ef4444', label: '异常', text: '有异常' }, // DOWN
-  2: { color: '#f59e0b', label: '高延迟', text: '高延迟' }, // PENDING
-  3: { color: '#3b82f6', label: '维护中', text: '维护中' }, // MAINTENANCE
+  1: { color: '#10b981', label: 'Healthy', text: 'Availability' }, // UP
+  0: { color: '#ef4444', label: 'Error', text: 'Unavailable' }, // DOWN
+  2: { color: '#f59e0b', label: 'High latency', text: 'High latency' }, // PENDING
+  3: { color: '#3b82f6', label: 'Under maintenance', text: 'Under maintenance' }, // MAINTENANCE
 };
 
 // ========== 本地存储键名 ==========

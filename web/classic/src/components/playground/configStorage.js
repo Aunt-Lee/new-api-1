@@ -219,16 +219,16 @@ export const importConfig = (file) => {
 
             resolve(importedConfig);
           } else {
-            reject(new Error('配置文件格式无效'));
+      reject(new Error('Invalid configuration file format'));
           }
         } catch (parseError) {
-          reject(new Error('解析配置文件失败: ' + parseError.message));
+      reject(new Error('Failed to parse configuration file: ' + parseError.message));
         }
       };
-      reader.onerror = () => reject(new Error('读取文件失败'));
+      reader.onerror = () => reject(new Error('Failed to read file'));
       reader.readAsText(file);
     } catch (error) {
-      reject(new Error('导入配置失败: ' + error.message));
+      reject(new Error('Failed to import configuration: ' + error.message));
     }
   });
 };

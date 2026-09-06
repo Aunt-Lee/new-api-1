@@ -36,12 +36,12 @@ import { IconSearch } from '@douyinfe/semi-icons';
 const { Text } = Typography;
 
 const FIELD_LABELS = {
-  description: '描述',
-  icon: '图标',
-  tags: '标签',
-  vendor: '供应商',
-  name_rule: '命名规则',
-  status: '状态',
+  description: 'Description',
+  icon: 'Icon',
+  tags: 'Tags',
+  vendor: 'Vendor',
+  name_rule: 'Name rule',
+  status: 'Status',
 };
 const FIELD_KEYS = Object.keys(FIELD_LABELS);
 

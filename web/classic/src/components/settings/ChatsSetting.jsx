@@ -57,7 +57,7 @@ const ChatsSetting = () => {
       setLoading(true);
       await getOptions();
     } catch (error) {
-      showError('刷新失败');
+      showError('Refresh failed.');
     } finally {
       setLoading(false);
     }

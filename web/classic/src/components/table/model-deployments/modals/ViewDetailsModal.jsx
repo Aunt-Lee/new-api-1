@@ -122,16 +122,16 @@ const ViewDetailsModal = ({ visible, onCancel, deployment, t }) => {
 
   const getStatusConfig = (status) => {
     const statusConfig = {
-      running: { color: 'green', text: '运行中', icon: '🟢' },
-      completed: { color: 'green', text: '已完成', icon: '✅' },
-      'deployment requested': { color: 'blue', text: '部署请求中', icon: '🔄' },
+      running: { color: 'green', text: 'Running', icon: '🟢' },
+      completed: { color: 'green', text: 'Completed', icon: '✅' },
+      'deployment requested': { color: 'blue', text: 'Deployment requested', icon: '🔄' },
       'termination requested': {
         color: 'orange',
-        text: '终止请求中',
+        text: 'Termination requested',
         icon: '⏸️',
       },
-      destroyed: { color: 'red', text: '已销毁', icon: '🔴' },
-      failed: { color: 'red', text: '失败', icon: '❌' },
+      destroyed: { color: 'red', text: 'Destroyed', icon: '🔴' },
+      failed: { color: 'red', text: 'Failed', icon: '❌' },
     };
     return statusConfig[status] || { color: 'grey', text: status, icon: '❓' };
   };

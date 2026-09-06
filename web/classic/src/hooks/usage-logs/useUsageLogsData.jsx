@@ -386,7 +386,7 @@ export const useLogsData = () => {
       if (isAdminUser && (logs[i].type === 0 || logs[i].type === 2 || logs[i].type === 6)) {
         expandDataLocal.push({
           key: t('渠道信息'),
-          value: `${logs[i].channel} - ${logs[i].channel_name || '[未知]'}`,
+          value: `${logs[i].channel} - ${logs[i].channel_name || '[Unknown]'}`,
         });
       }
       if (logs[i].request_id) {
@@ -800,7 +800,7 @@ export const useLogsData = () => {
   const copyText = async (e, text) => {
     e.stopPropagation();
     if (await copy(text)) {
-      showSuccess('已复制：' + text);
+      showSuccess('Copied: ' + text);
     } else {
       Modal.error({ title: t('无法复制到剪贴板，请手动复制'), content: text });
     }

@@ -49,19 +49,19 @@ import { useIsMobile } from '../../../../hooks/common/useIsMobile';
 const { Text, Title } = Typography;
 
 const durationUnitOptions = [
-  { value: 'year', label: '年' },
-  { value: 'month', label: '月' },
-  { value: 'day', label: '日' },
-  { value: 'hour', label: '小时' },
-  { value: 'custom', label: '自定义(秒)' },
+  { value: 'year', label: 'Year' },
+  { value: 'month', label: 'Month' },
+  { value: 'day', label: 'Day' },
+  { value: 'hour', label: 'Hour' },
+  { value: 'custom', label: 'Custom (seconds)' },
 ];
 
 const resetPeriodOptions = [
-  { value: 'never', label: '不重置' },
-  { value: 'daily', label: '每天' },
-  { value: 'weekly', label: '每周' },
-  { value: 'monthly', label: '每月' },
-  { value: 'custom', label: '自定义(秒)' },
+  { value: 'never', label: 'Never' },
+  { value: 'daily', label: 'Daily' },
+  { value: 'weekly', label: 'Weekly' },
+  { value: 'monthly', label: 'Monthly' },
+  { value: 'custom', label: 'Custom (seconds)' },
 ];
 
 const AddEditSubscriptionModal = ({

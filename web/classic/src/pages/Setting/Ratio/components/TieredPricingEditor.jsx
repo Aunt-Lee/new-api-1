@@ -71,9 +71,9 @@ function priceToUnitCost(price) {
 
 const OPS = ['<', '<=', '>', '>='];
 const VAR_OPTIONS = [
-  { value: 'len', label: 'len (长度)' },
-  { value: 'p', label: 'p (输入)' },
-  { value: 'c', label: 'c (输出)' },
+  { value: 'len', label: 'len (input length)' },
+  { value: 'p', label: 'p (input)' },
+  { value: 'c', label: 'c (output)' },
 ];
 
 const CACHE_MODE_TIMED = 'timed';
@@ -178,7 +178,7 @@ function generateExprFromVisualConfig(config) {
   const parts = [];
   for (let i = 0; i < tiers.length; i++) {
     const t = tiers[i];
-    const label = t.label || `第${i + 1}档`;
+    const label = t.label || `Tier ${i + 1}`;
     const body = `tier("${label}", ${buildTierBodyExpr(t)})`;
     const cond = buildConditionStr(t.conditions);
 
@@ -703,7 +703,7 @@ function VisualEditor({ visualConfig, onChange, t }) {
       conditions: [],
       input_unit_cost: 0,
       output_unit_cost: 0,
-      label: `第${newTiers.length + 1}档`,
+      label: `Tier ${newTiers.length + 1}`,
       cache_mode: CACHE_MODE_GENERIC,
     });
     onChange({ ...config, tiers: newTiers });
@@ -807,12 +807,12 @@ const PRESET_GROUPS = [
     group: '时间促销',
     presets: [
       {
-        key: 'night-discount', label: '夜间半价',
+        key: 'night-discount', label: 'Half-price night promotion',
         expr: 'tier("base", p * 3 + c * 15)',
         requestRules: [{ conditions: [{ source: SOURCE_TIME, timeFunc: 'hour', timezone: 'Asia/Shanghai', mode: MATCH_RANGE, rangeStart: '21', rangeEnd: '6' }], multiplier: '0.5' }],
       },
       {
-        key: 'weekend-discount', label: '周末8折',
+        key: 'weekend-discount', label: '20% off weekend promotion',
         expr: 'tier("base", p * 3 + c * 15)',
         requestRules: [
           { conditions: [{ source: SOURCE_TIME, timeFunc: 'weekday', timezone: 'Asia/Shanghai', mode: MATCH_EQ, value: '0' }], multiplier: '0.8' },
@@ -820,7 +820,7 @@ const PRESET_GROUPS = [
         ],
       },
       {
-        key: 'new-year-promo', label: '新年促销',
+        key: 'new-year-promo', label: 'New Year promotion',
         expr: 'tier("base", p * 3 + c * 15)',
         requestRules: [{ conditions: [
           { source: SOURCE_TIME, timeFunc: 'month', timezone: 'Asia/Shanghai', mode: MATCH_EQ, value: '1' },
@@ -994,18 +994,18 @@ function evalExprLocally(exprStr, p, c, extraTokenValues) {
 // ---------------------------------------------------------------------------
 
 const TIME_FUNC_LABELS = {
-  hour: '小时',
-  minute: '分钟',
-  weekday: '星期',
-  month: '月份',
-  day: '日期',
+  hour: 'Hour',
+  minute: 'Minute',
+  weekday: 'Weekday',
+  month: 'Month',
+  day: 'Day',
 };
 
 const TIME_FUNC_HINTS = {
   hour: '0~23',
   minute: '0~59',
-  weekday: '0=周日 1=周一 2=周二 3=周三 4=周四 5=周五 6=周六',
-  month: '1=一月 ... 12=十二月',
+  weekday: '0=Sunday 1=Monday 2=Tuesday 3=Wednesday 4=Thursday 5=Friday 6=Saturday',
+  month: '1=January ... 12=December',
   day: '1~31',
 };
 
@@ -1231,84 +1231,84 @@ function RuleGroupCard({ group, index, onChange, onRemove, t }) {
 // LLM prompt helper — copyable prompt for LLM-assisted expression design
 // ---------------------------------------------------------------------------
 
-const LLM_PROMPT_TEMPLATE = `你是一个 AI API 计费表达式设计助手。用户需要你帮忙设计一个计费表达式（billing expression），用于 AI API 网关的模型计费。
+const LLM_PROMPT_TEMPLATE = `You are an AI API billing expression design assistant. Help the user create a billing expression for model pricing in an AI API gateway.
 
-## 表达式语言
+## Expression language
 
-表达式基于 expr-lang/expr，支持标准算术运算和三元运算符。
+Expressions are based on expr-lang/expr and support standard arithmetic and ternary operators.
 
-### Token 变量
+### Token variables
 
-输入侧：
-- p — 输入 token 数（计价用）。系统会自动排除表达式中单独计价的子类别（如用了 cr，缓存 token 就从 p 中扣除）
-- len — 输入上下文总长度（条件判断用）。不受自动排除影响，始终反映完整输入长度。用于阶梯条件判断
-- cr — 缓存命中（读取）token 数
-- cc — 缓存创建 token 数（5分钟 TTL）
-- cc1h — 缓存创建 token 数（1小时 TTL，Claude 专用）
-- img — 图片输入 token 数
-- ai — 音频输入 token 数
+Input:
+- p - Input token count used for pricing. The system automatically excludes subcategories priced separately in the expression (for example, using cr subtracts cached tokens from p).
+- len - Total input context length used for conditions. It is not affected by automatic exclusion and always represents the complete input length. Use it for tier conditions.
+- cr - Cache read token count
+- cc - Cache creation token count (5-minute TTL)
+- cc1h - Cache creation token count (1-hour TTL, Claude only)
+- img - Image input token count
+- ai - Audio input token count
 
-输出侧：
-- c — 输出 token 数。同样会自动排除单独计价的子类别
-- img_o — 图片输出 token 数
-- ao — 音频输出 token 数
+Output:
+- c - Output token count. Separately priced subcategories are also excluded automatically.
+- img_o - Image output token count
+- ao - Audio output token count
 
-### p/c 自动排除机制
+### Automatic p/c exclusion
 
-p 和 c 是兜底变量，代表所有没有被表达式单独定价的 token。如果表达式使用了某个子类别变量（如 cr），对应 token 就从 p 中扣除，避免重复计费。没用到的子类别 token 则留在 p/c 中按基础价格计费。
+p and c are fallback variables representing tokens that are not priced separately by the expression. When the expression uses a subcategory variable such as cr, those tokens are subtracted from p to prevent double billing. Unused subcategory tokens remain in p/c and use the base price.
 
-重要：len 不受自动排除影响。阶梯条件应使用 len 而非 p，以避免缓存命中导致 p 降低而误判档位。
+Important: len is not affected by automatic exclusion. Use len instead of p for tier conditions so cache hits do not reduce p and select the wrong tier.
 
-### 内置函数
+### Built-in functions
 
-- tier(name, value) — 标记计费档位名称，必须包裹费用表达式
-- max(a, b)、min(a, b) — 取大/小值
-- ceil(x)、floor(x)、abs(x) — 向上取整、向下取整、绝对值
-- header(name) — 读取请求头
-- param(path) — 读取请求体 JSON 路径（gjson 语法）
-- has(source, substr) — 子字符串检查
-- hour(tz)、minute(tz)、weekday(tz)、month(tz)、day(tz) — 时间函数，tz 为时区如 "Asia/Shanghai"
+- tier(name, value) - Marks a billing tier name and must wrap the cost expression
+- max(a, b), min(a, b) - Returns the larger or smaller value
+- ceil(x), floor(x), abs(x) - Rounds up, rounds down, or returns the absolute value
+- header(name) - Reads a request header
+- param(path) - Reads a JSON request-body path using gjson syntax
+- has(source, substr) - Checks for a substring
+- hour(tz), minute(tz), weekday(tz), month(tz), day(tz) - Time functions; tz is a timezone such as "Asia/Shanghai"
 
-### 价格系数
+### Price coefficients
 
-表达式中的数字系数是 $/1M tokens 的价格。例如 p * 2.5 表示输入 $2.50/1M tokens。
+Numeric coefficients in expressions are prices in $/1M tokens. For example, p * 2.5 means an input price of $2.50/1M tokens.
 
-## 表达式示例
+## Expression examples
 
-简单定价：
+Simple pricing:
 tier("base", p * 2.5 + c * 15)
 
-带缓存的定价：
+Pricing with cache reads:
 tier("base", p * 2.5 + c * 15 + cr * 0.25)
 
-多档阶梯（用 len 做条件）：
+Multiple tiers using len:
 len <= 200000
   ? tier("standard", p * 3 + c * 15 + cr * 0.3 + cc * 3.75 + cc1h * 6)
   : tier("long_context", p * 6 + c * 22.5 + cr * 0.6 + cc * 7.5 + cc1h * 12)
 
-图片模型：
+Image model:
 tier("base", p * 2 + c * 8 + img * 2.5)
 
-多模态含音频：
+Multimodal model with audio:
 tier("base", p * 0.43 + c * 3.06 + img * 0.78 + ai * 3.81 + ao * 15.11)
 
-三档阶梯示例：
+Three-tier example:
 len <= 128000
   ? tier("standard", p * 1.1 + c * 4.4)
   : (len <= 1000000
     ? tier("medium", p * 2.2 + c * 8.8)
     : tier("long", p * 4.4 + c * 17.6))
 
-## 规则
+## Rules
 
-1. 每个叶子分支必须用 tier("名称", 费用表达式) 包裹
-2. tier 名称用英文，如 "base"、"standard"、"long_context"
-3. 阶梯条件用 len（不要用 p），支持 <、<=、>、>=
-4. 多档用嵌套三元运算符：条件1 ? tier(...) : (条件2 ? tier(...) : tier(...))
-5. 价格系数直接写供应商官方 $/1M tokens 价格
-6. 不需要缓存/图片/音频单独定价时可以不写对应变量，它们的 token 会自动包含在 p/c 中
+1. Wrap every leaf branch in tier("name", cost expression).
+2. Use English tier names such as "base", "standard", and "long_context".
+3. Use len rather than p for tier conditions; supported operators are <, <=, >, and >=.
+4. Use nested ternary operators for multiple tiers: condition1 ? tier(...) : (condition2 ? tier(...) : tier(...)).
+5. Use the provider's official $/1M token prices as coefficients.
+6. If cache, image, or audio categories do not need separate pricing, omit those variables; their tokens are automatically included in p/c.
 
-请根据用户提供的模型信息和定价需求，生成计费表达式。`;
+Generate a billing expression from the model information and pricing requirements provided by the user.`;
 
 function LlmPromptHelper({ t, model }) {
   const [open, setOpen] = useState(false);
@@ -1316,7 +1316,7 @@ function LlmPromptHelper({ t, model }) {
   const modelName = model?.name || '';
   const prompt = useMemo(() => {
     if (modelName) {
-      return LLM_PROMPT_TEMPLATE + `\n\n当前模型：${modelName}`;
+      return LLM_PROMPT_TEMPLATE + `\n\nCurrent model: ${modelName}`;
     }
     return LLM_PROMPT_TEMPLATE;
   }, [modelName]);

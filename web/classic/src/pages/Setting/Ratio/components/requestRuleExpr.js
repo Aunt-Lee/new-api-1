@@ -14,17 +14,17 @@ export const MATCH_RANGE = 'range';
 export const TIME_FUNCS = ['hour', 'minute', 'weekday', 'month', 'day'];
 
 export const COMMON_TIMEZONES = [
-  { value: 'Asia/Shanghai', label: 'UTC+8 北京 (Asia/Shanghai)' },
+  { value: 'Asia/Shanghai', label: 'UTC+8 Shanghai (Asia/Shanghai)' },
   { value: 'UTC', label: 'UTC' },
-  { value: 'America/New_York', label: 'UTC-5 纽约 (America/New_York)' },
-  { value: 'America/Los_Angeles', label: 'UTC-8 洛杉矶 (America/Los_Angeles)' },
-  { value: 'America/Chicago', label: 'UTC-6 芝加哥 (America/Chicago)' },
-  { value: 'Europe/London', label: 'UTC+0 伦敦 (Europe/London)' },
-  { value: 'Europe/Berlin', label: 'UTC+1 柏林 (Europe/Berlin)' },
-  { value: 'Asia/Tokyo', label: 'UTC+9 东京 (Asia/Tokyo)' },
-  { value: 'Asia/Singapore', label: 'UTC+8 新加坡 (Asia/Singapore)' },
-  { value: 'Asia/Seoul', label: 'UTC+9 首尔 (Asia/Seoul)' },
-  { value: 'Australia/Sydney', label: 'UTC+10 悉尼 (Australia/Sydney)' },
+  { value: 'America/New_York', label: 'UTC-5 New York (America/New_York)' },
+  { value: 'America/Los_Angeles', label: 'UTC-8 Los Angeles (America/Los_Angeles)' },
+  { value: 'America/Chicago', label: 'UTC-6 Chicago (America/Chicago)' },
+  { value: 'Europe/London', label: 'UTC+0 London (Europe/London)' },
+  { value: 'Europe/Berlin', label: 'UTC+1 Berlin (Europe/Berlin)' },
+  { value: 'Asia/Tokyo', label: 'UTC+9 Tokyo (Asia/Tokyo)' },
+  { value: 'Asia/Singapore', label: 'UTC+8 Singapore (Asia/Singapore)' },
+  { value: 'Asia/Seoul', label: 'UTC+9 Seoul (Asia/Seoul)' },
+  { value: 'Australia/Sydney', label: 'UTC+10 Sydney (Australia/Sydney)' },
 ];
 
 export const NUMERIC_LITERAL_REGEX =

@@ -204,7 +204,7 @@ const SettingsAnnouncements = ({ options, refresh }) => {
     });
     const { success, message } = res.data;
     if (success) {
-      showSuccess('系统公告已更新');
+      showSuccess('System announcement updated.');
       if (refresh) refresh();
     } else {
       showError(message);
@@ -218,8 +218,8 @@ const SettingsAnnouncements = ({ options, refresh }) => {
       await updateOption('console_setting.announcements', announcementsJson);
       setHasChanges(false);
     } catch (error) {
-      console.error('系统公告更新失败', error);
-      showError('系统公告更新失败');
+      console.error('System announcement update failed', error);
+      showError('System announcement update failed.');
     } finally {
       setLoading(false);
     }
@@ -261,7 +261,7 @@ const SettingsAnnouncements = ({ options, refresh }) => {
       );
       setAnnouncementsList(newList);
       setHasChanges(true);
-      showSuccess('公告已删除，请及时点击“保存设置”进行保存');
+      showSuccess('Announcement deleted. Click "Save Settings" to save the changes.');
     }
     setShowDeleteModal(false);
     setDeletingAnnouncement(null);
@@ -269,7 +269,7 @@ const SettingsAnnouncements = ({ options, refresh }) => {
 
   const handleSaveAnnouncement = async () => {
     if (!announcementForm.content || !announcementForm.publishDate) {
-      showError('请填写完整的公告信息');
+      showError('Please complete all announcement fields.');
       return;
     }
 
@@ -302,11 +302,11 @@ const SettingsAnnouncements = ({ options, refresh }) => {
       setShowAnnouncementModal(false);
       showSuccess(
         editingAnnouncement
-          ? '公告已更新，请及时点击“保存设置”进行保存'
-          : '公告已添加，请及时点击“保存设置”进行保存',
+          ? 'Announcement updated. Click "Save Settings" to save the changes.'
+          : 'Announcement added. Click "Save Settings" to save the changes.',
       );
     } catch (error) {
-      showError('操作失败: ' + error.message);
+      showError('Operation failed: ' + error.message);
     } finally {
       setModalLoading(false);
     }
@@ -328,7 +328,7 @@ const SettingsAnnouncements = ({ options, refresh }) => {
       }));
       setAnnouncementsList(listWithIds);
     } catch (error) {
-      console.error('解析系统公告失败:', error);
+      console.error('Failed to parse system announcements:', error);
       setAnnouncementsList([]);
     }
   };
@@ -371,7 +371,7 @@ const SettingsAnnouncements = ({ options, refresh }) => {
 
   const handleBatchDelete = () => {
     if (selectedRowKeys.length === 0) {
-      showError('请先选择要删除的系统公告');
+      showError('Select a system announcement to delete first.');
       return;
     }
 
@@ -382,7 +382,7 @@ const SettingsAnnouncements = ({ options, refresh }) => {
     setSelectedRowKeys([]);
     setHasChanges(true);
     showSuccess(
-      `已删除 ${selectedRowKeys.length} 个系统公告，请及时点击“保存设置”进行保存`,
+      `Deleted ${selectedRowKeys.length} system announcement(s). Click "Save Settings" to save the changes.`,
     );
   };
 

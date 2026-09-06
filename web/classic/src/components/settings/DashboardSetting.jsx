@@ -77,7 +77,7 @@ const DashboardSetting = () => {
       setLoading(true);
       await getOptions();
     } catch (error) {
-      showError('刷新失败');
+      showError('Refresh failed.');
       console.error(error);
     } finally {
       setLoading(false);
@@ -110,12 +110,12 @@ const DashboardSetting = () => {
     try {
       setLoading(true);
       await API.post('/api/option/migrate_console_setting');
-      showSuccess('旧配置迁移完成');
+      showSuccess('Legacy configuration migration completed.');
       await onRefresh();
       setShowMigrateModal(false);
     } catch (err) {
       console.error(err);
-      showError('迁移失败: ' + (err.message || '未知错误'));
+      showError('Migration failed: ' + (err.message || 'Unknown error'));
     } finally {
       setLoading(false);
     }
@@ -126,18 +126,18 @@ const DashboardSetting = () => {
       <Spin spinning={loading} size='large'>
         {/* 用于迁移检测的旧键模态框，下个版本会删除 */}
         <Modal
-          title='配置迁移确认'
+          title='Confirm configuration migration'
           visible={showMigrateModal}
           onOk={handleMigrate}
           onCancel={() => setShowMigrateModal(false)}
           confirmLoading={loading}
-          okText='确认迁移'
-          cancelText='取消'
+          okText='Migrate'
+          cancelText='Cancel'
         >
-          <p>检测到旧版本的配置数据，是否要迁移到新的配置格式？</p>
+          <p>Configuration data from an older version was found. Migrate it to the new format?</p>
           <p style={{ color: '#f57c00', marginTop: '10px' }}>
-            <strong>注意：</strong>
-            迁移过程中会自动处理数据格式转换，迁移完成后旧配置将被清除，请在迁移前在数据库中备份好旧配置。
+            <strong>Note:</strong>
+            The data format will be converted automatically, and the legacy configuration will be removed after migration. Back up the legacy configuration in the database first.
           </p>
         </Modal>
 

@@ -30,7 +30,7 @@ export function useTokenKeys(id) {
     const loadAllData = async () => {
       const fetchedKeys = await fetchTokenKeys();
       if (fetchedKeys.length === 0) {
-        showError('当前没有可用的启用令牌，请确认是否有令牌处于启用状态！');
+        showError('No enabled API tokens are available. Please check that at least one token is enabled.');
         setTimeout(() => {
           window.location.href = '/console/token';
         }, 1500); // 延迟 1.5 秒后跳转

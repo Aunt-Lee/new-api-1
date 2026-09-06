@@ -268,7 +268,7 @@ export function PreCode(props) {
               color: 'var(--semi-color-text-2)',
             }}
           >
-            HTML预览:
+            HTML preview:
           </div>
           <SandboxedHtmlPreview code={htmlCode} />
         </div>
@@ -680,7 +680,7 @@ export function MarkdownRenderer(props) {
               animation: 'spin 1s linear infinite',
             }}
           />
-          正在渲染...
+          Rendering...
         </div>
       ) : (
         <MarkdownContent

@@ -114,14 +114,14 @@ export const THINK_TAG_REGEX = /<think>([\s\S]*?)<\/think>/g;
 
 // ========== 错误消息 ==========
 export const ERROR_MESSAGES = {
-  NO_TEXT_CONTENT: '此消息没有可复制的文本内容',
-  INVALID_MESSAGE_TYPE: '无法复制此类型的消息内容',
-  COPY_FAILED: '复制失败，请手动选择文本复制',
-  COPY_HTTPS_REQUIRED: '复制功能需要 HTTPS 环境，请手动复制',
-  BROWSER_NOT_SUPPORTED: '浏览器不支持复制功能，请手动复制',
-  JSON_PARSE_ERROR: '自定义请求体格式错误，请检查JSON格式',
-  API_REQUEST_ERROR: '请求发生错误',
-  NETWORK_ERROR: '网络连接失败或服务器无响应',
+  NO_TEXT_CONTENT: 'This message has no text content to copy',
+  INVALID_MESSAGE_TYPE: 'This message type cannot be copied',
+  COPY_FAILED: 'Copy failed. Please select and copy the text manually',
+  COPY_HTTPS_REQUIRED: 'Copying requires HTTPS. Please copy the text manually',
+  BROWSER_NOT_SUPPORTED: 'This browser does not support copying. Please copy the text manually',
+  JSON_PARSE_ERROR: 'The custom request body is invalid JSON',
+  API_REQUEST_ERROR: 'The request failed',
+  NETWORK_ERROR: 'The network connection failed or the server is unavailable',
 };
 
 // ========== 存储键名 ==========

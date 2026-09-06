@@ -185,8 +185,8 @@ const ACCESS_POLICY_TEMPLATES = {
 };
 
 const ACCESS_DENIED_TEMPLATES = {
-  level_hint: '需要等级 {{required}}，你当前等级 {{current}}（字段：{{field}}）',
-  org_hint: '仅限指定组织或角色访问。组织={{current.org}}，角色={{current.roles}}',
+  level_hint: 'Level {{required}} is required. Your current level is {{current}} (field: {{field}}).',
+  org_hint: 'Access is limited to specific organizations or roles. Organization={{current.org}}, role={{current.roles}}.',
 };
 
 const CustomOAuthSetting = ({ serverAddress }) => {

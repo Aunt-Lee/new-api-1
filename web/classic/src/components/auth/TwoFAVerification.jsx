@@ -36,15 +36,15 @@ const TwoFAVerification = ({ onSuccess, onBack, isModal = false }) => {
 
   const handleSubmit = async () => {
     if (!verificationCode) {
-      showError('请输入验证码');
+      showError('Please enter the verification code');
       return;
     }
     // Validate code format
     if (useBackupCode && verificationCode.length !== 8) {
-      showError('备用码必须是8位');
+      showError('The backup code must be 8 characters');
       return;
     } else if (!useBackupCode && !/^\d{6}$/.test(verificationCode)) {
-      showError('验证码必须是6位数字');
+      showError('The verification code must be 6 digits');
       return;
     }
 
@@ -55,7 +55,7 @@ const TwoFAVerification = ({ onSuccess, onBack, isModal = false }) => {
       });
 
       if (res.data.success) {
-        showSuccess('登录成功');
+        showSuccess('Signed in successfully');
         // 保存用户信息到本地存储
         localStorage.setItem('user', JSON.stringify(res.data.data));
         if (onSuccess) {
@@ -65,7 +65,7 @@ const TwoFAVerification = ({ onSuccess, onBack, isModal = false }) => {
         showError(res.data.message);
       }
     } catch (error) {
-      showError('验证失败，请重试');
+      showError('Verification failed. Please try again.');
     } finally {
       setLoading(false);
     }
@@ -81,14 +81,14 @@ const TwoFAVerification = ({ onSuccess, onBack, isModal = false }) => {
     return (
       <div className='space-y-4'>
         <Paragraph className='text-gray-600 dark:text-gray-300'>
-          请输入认证器应用显示的验证码完成登录
+          Enter the code shown in your authenticator app to sign in
         </Paragraph>
 
         <Form onSubmit={handleSubmit}>
           <Form.Input
             field='code'
-            label={useBackupCode ? '备用码' : '验证码'}
-            placeholder={useBackupCode ? '请输入8位备用码' : '请输入6位验证码'}
+            label={useBackupCode ? 'Backup code' : 'Verification code'}
+            placeholder={useBackupCode ? 'Enter your 8-character backup code' : 'Enter your 6-digit verification code'}
             value={verificationCode}
             onChange={setVerificationCode}
             onKeyPress={handleKeyPress}
@@ -105,7 +105,7 @@ const TwoFAVerification = ({ onSuccess, onBack, isModal = false }) => {
             size='large'
             style={{ marginBottom: 16 }}
           >
-            验证并登录
+            Verify and sign in
           </Button>
         </Form>
 
@@ -121,7 +121,7 @@ const TwoFAVerification = ({ onSuccess, onBack, isModal = false }) => {
             }}
             style={{ marginRight: 16, color: '#1890ff', padding: 0 }}
           >
-            {useBackupCode ? '使用认证器验证码' : '使用备用码'}
+            {useBackupCode ? 'Use authenticator code' : 'Use backup code'}
           </Button>
 
           {onBack && (
@@ -131,19 +131,19 @@ const TwoFAVerification = ({ onSuccess, onBack, isModal = false }) => {
               onClick={onBack}
               style={{ color: '#1890ff', padding: 0 }}
             >
-              返回登录
+              Back to sign in
             </Button>
           )}
         </div>
 
         <div className='bg-gray-50 dark:bg-gray-800 rounded-lg p-3'>
           <Text size='small' type='secondary'>
-            <strong>提示：</strong>
+            <strong>Note:</strong>
             <br />
-            • 验证码每30秒更新一次
+            • Verification codes refresh every 30 seconds
             <br />
-            • 如果无法获取验证码，请使用备用码
-            <br />• 每个备用码只能使用一次
+            • Use a backup code if you cannot access your authenticator
+            <br />• Each backup code can only be used once
           </Text>
         </div>
       </div>
@@ -161,17 +161,17 @@ const TwoFAVerification = ({ onSuccess, onBack, isModal = false }) => {
     >
       <Card style={{ width: 400, padding: 24 }}>
         <div style={{ textAlign: 'center', marginBottom: 24 }}>
-          <Title heading={3}>两步验证</Title>
+          <Title heading={3}>Two-factor authentication</Title>
           <Paragraph type='secondary'>
-            请输入认证器应用显示的验证码完成登录
+            Enter the code shown in your authenticator app to sign in
           </Paragraph>
         </div>
 
         <Form onSubmit={handleSubmit}>
           <Form.Input
             field='code'
-            label={useBackupCode ? '备用码' : '验证码'}
-            placeholder={useBackupCode ? '请输入8位备用码' : '请输入6位验证码'}
+            label={useBackupCode ? 'Backup code' : 'Verification code'}
+            placeholder={useBackupCode ? 'Enter your 8-character backup code' : 'Enter your 6-digit verification code'}
             value={verificationCode}
             onChange={setVerificationCode}
             onKeyPress={handleKeyPress}
@@ -188,7 +188,7 @@ const TwoFAVerification = ({ onSuccess, onBack, isModal = false }) => {
             size='large'
             style={{ marginBottom: 16 }}
           >
-            验证并登录
+            Verify and sign in
           </Button>
         </Form>
 
@@ -204,7 +204,7 @@ const TwoFAVerification = ({ onSuccess, onBack, isModal = false }) => {
             }}
             style={{ marginRight: 16, color: '#1890ff', padding: 0 }}
           >
-            {useBackupCode ? '使用认证器验证码' : '使用备用码'}
+            {useBackupCode ? 'Use authenticator code' : 'Use backup code'}
           </Button>
 
           {onBack && (
@@ -214,7 +214,7 @@ const TwoFAVerification = ({ onSuccess, onBack, isModal = false }) => {
               onClick={onBack}
               style={{ color: '#1890ff', padding: 0 }}
             >
-              返回登录
+              Back to sign in
             </Button>
           )}
         </div>
@@ -228,12 +228,12 @@ const TwoFAVerification = ({ onSuccess, onBack, isModal = false }) => {
           }}
         >
           <Text size='small' type='secondary'>
-            <strong>提示：</strong>
+            <strong>Note:</strong>
             <br />
-            • 验证码每30秒更新一次
+            • Verification codes refresh every 30 seconds
             <br />
-            • 如果无法获取验证码，请使用备用码
-            <br />• 每个备用码只能使用一次
+            • Use a backup code if you cannot access your authenticator
+            <br />• Each backup code can only be used once
           </Text>
         </div>
       </Card>

@@ -661,7 +661,7 @@ const JSONEditor = ({
         {hasJsonError && (
           <Banner
             type='danger'
-            description={`JSON 格式错误: ${jsonError}`}
+            description={`Invalid JSON: ${jsonError}`}
             className='mb-3'
           />
         )}

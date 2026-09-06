@@ -201,7 +201,7 @@ const EditTagModal = (props) => {
     let data = { tag };
     if (formVals.model_mapping) {
       if (!verifyJSON(formVals.model_mapping)) {
-        showInfo('模型映射必须是合法的 JSON 格式！');
+        showInfo('Model mapping must be valid JSON!');
         setLoading(false);
         return;
       }
@@ -218,13 +218,13 @@ const EditTagModal = (props) => {
       formVals.param_override !== null
     ) {
       if (typeof formVals.param_override !== 'string') {
-        showInfo('参数覆盖必须是合法的 JSON 格式！');
+        showInfo('Parameter overrides must be valid JSON!');
         setLoading(false);
         return;
       }
       const trimmedParamOverride = formVals.param_override.trim();
       if (trimmedParamOverride !== '' && !verifyJSON(trimmedParamOverride)) {
-        showInfo('参数覆盖必须是合法的 JSON 格式！');
+        showInfo('Parameter overrides must be valid JSON!');
         setLoading(false);
         return;
       }
@@ -235,13 +235,13 @@ const EditTagModal = (props) => {
       formVals.header_override !== null
     ) {
       if (typeof formVals.header_override !== 'string') {
-        showInfo('请求头覆盖必须是合法的 JSON 格式！');
+        showInfo('Header overrides must be valid JSON!');
         setLoading(false);
         return;
       }
       const trimmedHeaderOverride = formVals.header_override.trim();
       if (trimmedHeaderOverride !== '' && !verifyJSON(trimmedHeaderOverride)) {
-        showInfo('请求头覆盖必须是合法的 JSON 格式！');
+        showInfo('Header overrides must be valid JSON!');
         setLoading(false);
         return;
       }
@@ -256,7 +256,7 @@ const EditTagModal = (props) => {
       data.param_override === undefined &&
       data.header_override === undefined
     ) {
-      showWarning('没有任何修改！');
+      showWarning('No changes were made!');
       setLoading(false);
       return;
     }
@@ -268,7 +268,7 @@ const EditTagModal = (props) => {
     try {
       const res = await API.put('/api/channel/tag', data);
       if (res?.data?.success) {
-        showSuccess('标签更新成功！');
+        showSuccess('Tag updated successfully!');
         refresh();
         handleClose();
       }
@@ -472,7 +472,7 @@ const EditTagModal = (props) => {
                   <Banner
                     type='info'
                     description={t(
-                      '当前模型列表为该标签下所有渠道模型列表最长的一个，并非所有渠道的并集，请注意可能导致某些渠道模型丢失。',
+                      'The current model list is copied from the longest channel model list under this tag, not the union of all channels. Some channel models may be missing.',
                     )}
                     className='!rounded-lg mb-4'
                   />
@@ -518,7 +518,7 @@ const EditTagModal = (props) => {
                     field='model_mapping'
                     label={t('模型重定向')}
                     placeholder={t(
-                      '此项可选，用于修改请求体中的模型名称，为一个 JSON 字符串，键为请求中模型名称，值为要替换的模型名称，留空则不更改',
+                      'Optional. Use a JSON object to rename models in the request body. Keys are request model names and values are replacement names. Leave empty to keep names unchanged.',
                     )}
                     autosize
                     onChange={(value) =>
@@ -735,7 +735,7 @@ const EditTagModal = (props) => {
                     multiple
                     allowAdditions
                     additionLabel={t(
-                      '请在系统设置页面编辑分组倍率以添加新的分组：',
+                      'Edit group ratios on the System Settings page to add a new group:',
                     )}
                     optionList={groupOptions}
                     style={{ width: '100%' }}

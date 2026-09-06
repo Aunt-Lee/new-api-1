@@ -39,12 +39,12 @@ export const useUserPermissions = () => {
         setPermissions(userPermissions);
         console.log('用户权限加载成功:', userPermissions);
       } else {
-        setError(res.data.message || '获取权限失败');
-        console.error('获取权限失败:', res.data.message);
+        setError(res.data.message || 'Failed to load permissions');
+        console.error('Failed to load permissions:', res.data.message);
       }
     } catch (error) {
-      setError('网络错误，请重试');
-      console.error('加载用户权限异常:', error);
+      setError('Network error. Please try again.');
+      console.error('Unexpected error while loading user permissions:', error);
     } finally {
       setLoading(false);
     }

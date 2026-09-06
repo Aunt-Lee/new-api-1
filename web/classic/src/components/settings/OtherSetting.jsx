@@ -181,10 +181,10 @@ const OtherSetting = () => {
     try {
       setLoadingInput((loadingInput) => ({ ...loadingInput, Logo: true }));
       await updateOption('Logo', inputs.Logo);
-      showSuccess('Logo 已更新');
+      showSuccess('Logo updated.');
     } catch (error) {
-      console.error('Logo 更新失败', error);
-      showError('Logo 更新失败');
+      console.error('Logo update failed', error);
+      showError('Logo update failed.');
     } finally {
       setLoadingInput((loadingInput) => ({ ...loadingInput, Logo: false }));
     }
@@ -197,10 +197,10 @@ const OtherSetting = () => {
         HomePageContent: true,
       }));
       await updateOption(key, inputs[key]);
-      showSuccess('首页内容已更新');
+      showSuccess('Home page content updated.');
     } catch (error) {
-      console.error('首页内容更新失败', error);
-      showError('首页内容更新失败');
+      console.error('Home page content update failed', error);
+      showError('Home page content update failed.');
     } finally {
       setLoadingInput((loadingInput) => ({
         ...loadingInput,
@@ -213,10 +213,10 @@ const OtherSetting = () => {
     try {
       setLoadingInput((loadingInput) => ({ ...loadingInput, About: true }));
       await updateOption('About', inputs.About);
-      showSuccess('关于内容已更新');
+      showSuccess('About content updated.');
     } catch (error) {
-      console.error('关于内容更新失败', error);
-      showError('关于内容更新失败');
+      console.error('About content update failed', error);
+      showError('About content update failed.');
     } finally {
       setLoadingInput((loadingInput) => ({ ...loadingInput, About: false }));
     }
@@ -226,10 +226,10 @@ const OtherSetting = () => {
     try {
       setLoadingInput((loadingInput) => ({ ...loadingInput, Footer: true }));
       await updateOption('Footer', inputs.Footer);
-      showSuccess('页脚内容已更新');
+      showSuccess('Footer content updated.');
     } catch (error) {
-      console.error('页脚内容更新失败', error);
-      showError('页脚内容更新失败');
+      console.error('Footer content update failed', error);
+      showError('Footer content update failed.');
     } finally {
       setLoadingInput((loadingInput) => ({ ...loadingInput, Footer: false }));
     }
@@ -267,7 +267,7 @@ const OtherSetting = () => {
 
       const { tag_name, body } = res;
       if (tag_name === statusState?.status?.version) {
-        showSuccess(`已是最新版本：${tag_name}`);
+        showSuccess(`Already up to date: ${tag_name}`);
       } else {
         setUpdateData({
           tag_name: tag_name,
@@ -277,7 +277,7 @@ const OtherSetting = () => {
       }
     } catch (error) {
       console.error('Failed to check for updates:', error);
-      showError('检查更新失败，请稍后再试');
+      showError('Failed to check for updates. Please try again later.');
     } finally {
       setLoadingInput((loadingInput) => ({
         ...loadingInput,

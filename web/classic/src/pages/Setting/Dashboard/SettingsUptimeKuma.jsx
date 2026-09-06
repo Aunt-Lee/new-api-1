@@ -145,7 +145,7 @@ const SettingsUptimeKuma = ({ options, refresh }) => {
     });
     const { success, message } = res.data;
     if (success) {
-      showSuccess('Uptime Kuma配置已更新');
+      showSuccess('Uptime Kuma configuration updated.');
       if (refresh) refresh();
     } else {
       showError(message);
@@ -159,8 +159,8 @@ const SettingsUptimeKuma = ({ options, refresh }) => {
       await updateOption('console_setting.uptime_kuma_groups', groupsJson);
       setHasChanges(false);
     } catch (error) {
-      console.error('Uptime Kuma配置更新失败', error);
-      showError('Uptime Kuma配置更新失败');
+      console.error('Uptime Kuma configuration update failed', error);
+      showError('Uptime Kuma configuration update failed.');
     } finally {
       setLoading(false);
     }
@@ -198,7 +198,7 @@ const SettingsUptimeKuma = ({ options, refresh }) => {
       );
       setUptimeGroupsList(newList);
       setHasChanges(true);
-      showSuccess('分类已删除，请及时点击“保存设置”进行保存');
+      showSuccess('Category deleted. Click "Save Settings" to save the changes.');
     }
     setShowDeleteModal(false);
     setDeletingGroup(null);
@@ -206,19 +206,19 @@ const SettingsUptimeKuma = ({ options, refresh }) => {
 
   const handleSaveGroup = async () => {
     if (!uptimeForm.categoryName || !uptimeForm.url || !uptimeForm.slug) {
-      showError('请填写完整的分类信息');
+      showError('Please complete all category fields.');
       return;
     }
 
     try {
       new URL(uptimeForm.url);
     } catch (error) {
-      showError('请输入有效的URL地址');
+      showError('Enter a valid URL.');
       return;
     }
 
     if (!/^[a-zA-Z0-9_-]+$/.test(uptimeForm.slug)) {
-      showError('Slug只能包含字母、数字、下划线和连字符');
+      showError('Slug may contain only letters, numbers, underscores, and hyphens.');
       return;
     }
 
@@ -245,11 +245,11 @@ const SettingsUptimeKuma = ({ options, refresh }) => {
       setShowUptimeModal(false);
       showSuccess(
         editingGroup
-          ? '分类已更新，请及时点击“保存设置”进行保存'
-          : '分类已添加，请及时点击“保存设置”进行保存',
+          ? 'Category updated. Click "Save Settings" to save the changes.'
+          : 'Category added. Click "Save Settings" to save the changes.',
       );
     } catch (error) {
-      showError('操作失败: ' + error.message);
+      showError('Operation failed: ' + error.message);
     } finally {
       setModalLoading(false);
     }
@@ -270,7 +270,7 @@ const SettingsUptimeKuma = ({ options, refresh }) => {
       }));
       setUptimeGroupsList(listWithIds);
     } catch (error) {
-      console.error('解析Uptime Kuma配置失败:', error);
+      console.error('Failed to parse Uptime Kuma configuration:', error);
       setUptimeGroupsList([]);
     }
   };
@@ -312,7 +312,7 @@ const SettingsUptimeKuma = ({ options, refresh }) => {
 
   const handleBatchDelete = () => {
     if (selectedRowKeys.length === 0) {
-      showError('请先选择要删除的分类');
+      showError('Select a category to delete first.');
       return;
     }
 
@@ -323,7 +323,7 @@ const SettingsUptimeKuma = ({ options, refresh }) => {
     setSelectedRowKeys([]);
     setHasChanges(true);
     showSuccess(
-      `已删除 ${selectedRowKeys.length} 个分类，请及时点击“保存设置”进行保存`,
+      `Deleted ${selectedRowKeys.length} category/categories. Click "Save Settings" to save the changes.`,
     );
   };
 

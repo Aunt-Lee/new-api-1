@@ -56,7 +56,7 @@ export function extractVerificationInfo(error) {
 
   return {
     code: data.code,
-    message: data.message || '需要安全验证',
+    message: data.message || 'Security verification required',
     required: true,
   };
 }

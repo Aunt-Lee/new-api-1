@@ -22,27 +22,27 @@ import dayjs from 'dayjs';
 // ========== 日期预设常量 ==========
 export const DATE_RANGE_PRESETS = [
   {
-    text: '今天',
+    text: 'Today',
     start: () => dayjs().startOf('day').toDate(),
     end: () => dayjs().endOf('day').toDate(),
   },
   {
-    text: '近 7 天',
+    text: 'Last 7 days',
     start: () => dayjs().subtract(6, 'day').startOf('day').toDate(),
     end: () => dayjs().endOf('day').toDate(),
   },
   {
-    text: '本周',
+    text: 'This week',
     start: () => dayjs().startOf('week').toDate(),
     end: () => dayjs().endOf('week').toDate(),
   },
   {
-    text: '近 30 天',
+    text: 'Last 30 days',
     start: () => dayjs().subtract(29, 'day').startOf('day').toDate(),
     end: () => dayjs().endOf('day').toDate(),
   },
   {
-    text: '本月',
+    text: 'This month',
     start: () => dayjs().startOf('month').toDate(),
     end: () => dayjs().endOf('month').toDate(),
   },

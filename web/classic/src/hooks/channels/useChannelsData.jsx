@@ -254,7 +254,7 @@ export const useChannelsData = () => {
             key: tag,
             id: tag,
             tag: tag,
-            name: '标签：' + tag,
+            name: 'Tag: ' + tag,
             group: '',
             used_quota: 0,
             response_time: 0,
@@ -620,7 +620,7 @@ export const useChannelsData = () => {
     switch (type) {
       case 'priority':
         if (data.priority === undefined || data.priority === '') {
-          showInfo('优先级必须是整数！');
+          showInfo('Priority must be an integer!');
           return;
         }
         data.priority = parseInt(data.priority);
@@ -631,7 +631,7 @@ export const useChannelsData = () => {
           data.weight < 0 ||
           data.weight === ''
         ) {
-          showInfo('权重必须是非负整数！');
+          showInfo('Weight must be a non-negative integer!');
           return;
         }
         data.weight = parseInt(data.weight);
@@ -641,7 +641,7 @@ export const useChannelsData = () => {
     try {
       const res = await API.put('/api/channel/tag', data);
       if (res?.data?.success) {
-        showSuccess('更新成功！');
+        showSuccess('Updated successfully!');
         await refresh();
       }
     } catch (error) {
@@ -920,7 +920,7 @@ export const useChannelsData = () => {
         } else {
           showInfo(
             t(
-              '通道 ${name} 测试成功，模型 ${model} 耗时 ${time.toFixed(2)} 秒。',
+              'Channel ${name} test succeeded. Model ${model} took ${time.toFixed(2)} seconds.',
             )
               .replace('${name}', record.name)
               .replace('${model}', model)

@@ -27,15 +27,15 @@ export const REDEMPTION_STATUS = {
 export const REDEMPTION_STATUS_MAP = {
   [REDEMPTION_STATUS.UNUSED]: {
     color: 'green',
-    text: '未使用',
+    text: 'Unused',
   },
   [REDEMPTION_STATUS.DISABLED]: {
     color: 'red',
-    text: '已禁用',
+    text: 'Disabled',
   },
   [REDEMPTION_STATUS.USED]: {
     color: 'grey',
-    text: '已使用',
+    text: 'Used',
   },
 };
 

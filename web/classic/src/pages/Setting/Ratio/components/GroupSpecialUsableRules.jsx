@@ -94,9 +94,9 @@ export function serializeGroupSpecialUsable(rules) {
 }
 
 const OP_TAG_MAP = {
-  [OP_ADD]: { color: 'green', label: '添加 (+:)' },
-  [OP_REMOVE]: { color: 'red', label: '移除 (-:)' },
-  [OP_APPEND]: { color: 'blue', label: '追加' },
+  [OP_ADD]: { color: 'green', label: 'Add (+:)' },
+  [OP_REMOVE]: { color: 'red', label: 'Remove (-:)' },
+  [OP_APPEND]: { color: 'blue', label: 'Append' },
 };
 
 function UsableGroupSection({ groupName, items, opOptions, onUpdate, onRemove, onAdd, t }) {

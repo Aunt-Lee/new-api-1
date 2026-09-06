@@ -134,28 +134,28 @@ const MODEL_FETCHABLE_TYPES = new Set([
 ]);
 
 function type2secretPrompt(type) {
-  // inputs.type === 15 ? '按照如下格式输入：APIKey|SecretKey' : (inputs.type === 18 ? '按照如下格式输入：APPID|APISecret|APIKey' : '请输入渠道对应的鉴权密钥')
+  // inputs.type === 15 ? 'Enter in the format: APIKey|SecretKey' : (inputs.type === 18 ? 'Enter in the format: APPID|APISecret|APIKey' : 'Enter the channel authentication key')
   switch (type) {
     case 15:
-      return '按照如下格式输入：APIKey|SecretKey';
+      return 'Enter in the format: APIKey|SecretKey';
     case 18:
-      return '按照如下格式输入：APPID|APISecret|APIKey';
+      return 'Enter in the format: APPID|APISecret|APIKey';
     case 22:
-      return '按照如下格式输入：APIKey-AppId，例如：fastgpt-0sp2gtvfdgyi4k30jwlgwf1i-64f335d84283f05518e9e041';
+      return 'Enter in the format: APIKey-AppId, for example: fastgpt-0sp2gtvfdgyi4k30jwlgwf1i-64f335d84283f05518e9e041';
     case 23:
-      return '按照如下格式输入：AppId|SecretId|SecretKey';
+      return 'Enter in the format: AppId|SecretId|SecretKey';
     case 33:
-      return '按照如下格式输入：Ak|Sk|Region';
+      return 'Enter in the format: Ak|Sk|Region';
     case 45:
-      return '请输入渠道对应的鉴权密钥, 豆包语音输入：AppId|AccessToken';
+      return 'Enter the channel authentication key. For Doubao Speech, use: AppId|AccessToken';
     case 50:
-      return '按照如下格式输入: AccessKey|SecretKey, 如果上游是New API，则直接输ApiKey';
+      return 'Enter in the format: AccessKey|SecretKey. If the upstream is New API, enter the ApiKey directly';
     case 51:
-      return '按照如下格式输入: AccessKey|SecretAccessKey';
+      return 'Enter in the format: AccessKey|SecretAccessKey';
     case 57:
-      return '请输入 JSON 格式的 OAuth 凭据（必须包含 access_token 和 account_id）';
+      return 'Enter OAuth credentials in JSON format (must include access_token and account_id)';
     default:
-      return '请输入渠道对应的鉴权密钥';
+      return 'Enter the channel authentication key';
   }
 }
 
@@ -433,7 +433,7 @@ const EditChannelModal = (props) => {
   const initialModelMappingRef = useRef('');
   const initialStatusCodeMappingRef = useRef('');
   const doubaoCodingPlanDeprecationMessage =
-    'Doubao Coding Plan 不再允许新增。根据火山方舟文档，Coding 套餐额度仅适用于 AI Coding 产品内调用，不适用于单独 API 调用；在非 AI Coding 产品中使用对应的 Base URL 和 API Key 可能被视为违规，并可能导致订阅停用或账号封禁。';
+    'New Doubao Coding Plan channels are no longer allowed. According to the Volcengine Ark documentation, Coding plan quota is only for use within AI Coding products and not for standalone API calls. Using the Base URL and API key in a non-AI Coding product may violate the terms and can lead to subscription suspension or account bans.';
   const canKeepDeprecatedDoubaoCodingPlan =
     initialBaseUrlRef.current === DEPRECATED_DOUBAO_CODING_PLAN_BASE_URL;
   const doubaoCodingPlanOptionLabel = (
@@ -616,9 +616,9 @@ const EditChannelModal = (props) => {
 
     if (name === 'base_url' && value.endsWith('/v1')) {
       Modal.confirm({
-        title: '警告',
+        title: 'Warning',
         content:
-          '不需要在末尾加/v1，New API会自动处理，添加后可能导致请求失败，是否继续？',
+          'Do not append /v1. New API handles it automatically; adding it may cause requests to fail. Continue?',
         onOk: () => {
           setInputs((inputs) => ({ ...inputs, [name]: value }));
         },
@@ -3143,7 +3143,7 @@ const EditChannelModal = (props) => {
                         field='other'
                         label={t('模型版本')}
                         placeholder={
-                          '请输入星火大模型版本，注意是接口地址中的版本号，例如：v2.1'
+                          'Enter the Spark model version from the endpoint URL, for example: v2.1'
                         }
                         onChange={(value) => handleInputChange('other', value)}
                         showClear
@@ -3175,7 +3175,7 @@ const EditChannelModal = (props) => {
                       <Form.Input
                         field='other'
                         label={t('知识库 ID')}
-                        placeholder={'请输入知识库 ID，例如：123456'}
+                        placeholder={'Enter the knowledge base ID, for example: 123456'}
                         onChange={(value) => handleInputChange('other', value)}
                         showClear
                       />
@@ -3186,7 +3186,7 @@ const EditChannelModal = (props) => {
                         field='other'
                         label='Account ID'
                         placeholder={
-                          '请输入Account ID，例如：d6b5da8hk1awo8nap34ube6gh'
+                          'Enter the Account ID, for example: d6b5da8hk1awo8nap34ube6gh'
                         }
                         onChange={(value) => handleInputChange('other', value)}
                         showClear
@@ -3197,7 +3197,7 @@ const EditChannelModal = (props) => {
                       <Form.Input
                         field='other'
                         label={t('智能体ID')}
-                        placeholder={'请输入智能体ID，例如：7342866812345'}
+                        placeholder={'Enter the agent ID, for example: 7342866812345'}
                         onChange={(value) => handleInputChange('other', value)}
                         showClear
                       />

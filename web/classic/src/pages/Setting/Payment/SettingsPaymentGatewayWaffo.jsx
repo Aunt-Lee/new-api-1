@@ -363,11 +363,10 @@ export default function SettingsPaymentGatewayWaffo(props) {
             icon={<BookOpen size={16} />}
             description={
               <>
-                Waffo 密钥、商户和支付方式等设置请
+                Configure Waffo keys, merchant details, and payment methods{' '}
                 <a href='https://waffo.com' target='_blank' rel='noreferrer'>
-                  点击此处
-                </a>
-                进行配置，切换沙盒模式时请同步填写对应环境的密钥。
+                  here
+                </a>. When switching sandbox mode, also fill in the keys for the corresponding environment.
                 <br />
                 {t('回调地址')}：
                 {props.options.ServerAddress

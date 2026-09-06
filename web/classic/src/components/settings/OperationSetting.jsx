@@ -109,7 +109,7 @@ const OperationSetting = () => {
       await getOptions();
       // showSuccess('刷新成功');
     } catch (error) {
-      showError('刷新失败');
+      showError('Refresh failed.');
     } finally {
       setLoading(false);
     }

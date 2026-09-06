@@ -128,18 +128,17 @@ export default function SettingsPaymentGatewayWaffoPancake(props) {
             icon={<BookOpen size={16} />}
             description={
               <>
-                Waffo Pancake 商户 ID 与私钥请在
+                Find the Waffo Pancake merchant ID and private key in the{' '}
                 <a
                   href='https://pancake.waffo.ai/merchant/dashboard'
                   target='_blank'
                   rel='noreferrer'
                 >
-                  Waffo Pancake 控制台
-                </a>
-                获取，保存后系统会自动在该商户名下创建 Store + Product，无需手动配置；
-                环境（test / 生产）由你粘贴的 API 私钥本身决定。
-                请在 Pancake 控制台把下面两个回调地址分别注册到 Test Mode 和 Production Mode
-                两个 webhook 位置，分开走避免测试流量污染生产数据：
+                  Waffo Pancake dashboard
+                </a>. After saving, the system automatically creates a Store + Product for the merchant; no manual setup is required.
+                The environment (test / production) is determined by the API private key you paste.
+                Register the two callback URLs below in the Test Mode and Production Mode webhook settings in the Pancake dashboard
+                to keep test traffic separate from production data:
                 <br />
                 {t('Test 回调地址')}：
                 {props.options.ServerAddress

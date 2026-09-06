@@ -140,7 +140,7 @@ const SettingsFAQ = ({ options, refresh }) => {
     });
     const { success, message } = res.data;
     if (success) {
-      showSuccess('常见问答已更新');
+      showSuccess('FAQ updated.');
       if (refresh) refresh();
     } else {
       showError(message);
@@ -154,8 +154,8 @@ const SettingsFAQ = ({ options, refresh }) => {
       await updateOption('console_setting.faq', faqJson);
       setHasChanges(false);
     } catch (error) {
-      console.error('常见问答更新失败', error);
-      showError('常见问答更新失败');
+      console.error('FAQ update failed', error);
+      showError('FAQ update failed.');
     } finally {
       setLoading(false);
     }
@@ -189,7 +189,7 @@ const SettingsFAQ = ({ options, refresh }) => {
       const newList = faqList.filter((item) => item.id !== deletingFaq.id);
       setFaqList(newList);
       setHasChanges(true);
-      showSuccess('问答已删除，请及时点击“保存设置”进行保存');
+      showSuccess('FAQ deleted. Click "Save Settings" to save the changes.');
     }
     setShowDeleteModal(false);
     setDeletingFaq(null);
@@ -197,7 +197,7 @@ const SettingsFAQ = ({ options, refresh }) => {
 
   const handleSaveFaq = async () => {
     if (!faqForm.question || !faqForm.answer) {
-      showError('请填写完整的问答信息');
+      showError('Please complete all FAQ fields.');
       return;
     }
 
@@ -223,11 +223,11 @@ const SettingsFAQ = ({ options, refresh }) => {
       setShowFaqModal(false);
       showSuccess(
         editingFaq
-          ? '问答已更新，请及时点击“保存设置”进行保存'
-          : '问答已添加，请及时点击“保存设置”进行保存',
+          ? 'FAQ updated. Click "Save Settings" to save the changes.'
+          : 'FAQ added. Click "Save Settings" to save the changes.',
       );
     } catch (error) {
-      showError('操作失败: ' + error.message);
+      showError('Operation failed: ' + error.message);
     } finally {
       setModalLoading(false);
     }
@@ -249,7 +249,7 @@ const SettingsFAQ = ({ options, refresh }) => {
       }));
       setFaqList(listWithIds);
     } catch (error) {
-      console.error('解析常见问答失败:', error);
+      console.error('Failed to parse FAQs:', error);
       setFaqList([]);
     }
   };
@@ -290,7 +290,7 @@ const SettingsFAQ = ({ options, refresh }) => {
 
   const handleBatchDelete = () => {
     if (selectedRowKeys.length === 0) {
-      showError('请先选择要删除的常见问答');
+      showError('Select an FAQ to delete first.');
       return;
     }
 
@@ -301,7 +301,7 @@ const SettingsFAQ = ({ options, refresh }) => {
     setSelectedRowKeys([]);
     setHasChanges(true);
     showSuccess(
-      `已删除 ${selectedRowKeys.length} 个常见问答，请及时点击“保存设置”进行保存`,
+      `Deleted ${selectedRowKeys.length} FAQ item(s). Click "Save Settings" to save the changes.`,
     );
   };
 

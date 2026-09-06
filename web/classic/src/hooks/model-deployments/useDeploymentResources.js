@@ -77,12 +77,12 @@ export const useDeploymentResources = () => {
         );
         return normalizedHardware;
       } else {
-        showError('获取硬件类型失败: ' + response.data.message);
+        showError('Failed to fetch hardware types: ' + response.data.message);
         setHardwareTotalAvailable(0);
         return [];
       }
     } catch (error) {
-      showError('获取硬件类型失败: ' + error.message);
+      showError('Failed to fetch hardware types: ' + error.message);
       setHardwareTotalAvailable(0);
       return [];
     } finally {
@@ -151,12 +151,12 @@ export const useDeploymentResources = () => {
         );
         return normalizedLocations;
       } else {
-        showError('获取部署位置失败: ' + response.data.message);
+        showError('Failed to fetch deployment locations: ' + response.data.message);
         setLocationsTotalAvailable(0);
         return [];
       }
     } catch (error) {
-      showError('获取部署位置失败: ' + error.message);
+      showError('Failed to fetch deployment locations: ' + error.message);
       setLocationsTotalAvailable(0);
       return [];
     } finally {
@@ -181,7 +181,7 @@ export const useDeploymentResources = () => {
           setAvailableReplicas(replicas);
           return replicas;
         } else {
-          showError('获取可用资源失败: ' + response.data.message);
+          showError('Failed to fetch available resources: ' + response.data.message);
           setAvailableReplicas([]);
           return [];
         }
@@ -235,7 +235,7 @@ export const useDeploymentResources = () => {
         setPriceEstimation(estimation);
         return estimation;
       } else {
-        showError('价格计算失败: ' + response.data.message);
+        showError('Failed to calculate the price: ' + response.data.message);
         setPriceEstimation(null);
         return null;
       }
@@ -258,7 +258,7 @@ export const useDeploymentResources = () => {
       if (response.data.success) {
         return response.data.data.available;
       } else {
-        showError('检查名称可用性失败: ' + response.data.message);
+        showError('Failed to check name availability: ' + response.data.message);
         return false;
       }
     } catch (error) {
@@ -273,7 +273,7 @@ export const useDeploymentResources = () => {
       if (response.data.success) {
         return response.data.data;
       } else {
-        throw new Error(response.data.message || '创建部署失败');
+        throw new Error(response.data.message || 'Failed to create deployment');
       }
     } catch (error) {
       throw error;

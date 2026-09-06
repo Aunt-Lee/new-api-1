@@ -50,7 +50,7 @@ export function prepareCredentialCreationOptions(payload) {
     payload?.response ||
     payload?.Response;
   if (!options) {
-    throw new Error('无法从服务端响应中解析 Passkey 注册参数');
+    throw new Error('Unable to parse Passkey registration options from the server response');
   }
   const publicKey = {
     ...options,
@@ -85,7 +85,7 @@ export function prepareCredentialRequestOptions(payload) {
     payload?.response ||
     payload?.Response;
   if (!options) {
-    throw new Error('无法从服务端响应中解析 Passkey 登录参数');
+    throw new Error('Unable to parse Passkey login options from the server response');
   }
   const publicKey = {
     ...options,

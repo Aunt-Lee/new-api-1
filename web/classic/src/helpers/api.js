@@ -172,7 +172,7 @@ export const buildApiPayload = (
 // 处理API错误响应
 export const handleApiError = (error, response = null) => {
   const errorInfo = {
-    error: error.message || '未知错误',
+    error: error.message || 'Unknown error',
     timestamp: new Date().toISOString(),
     stack: error.stack,
   };
@@ -183,9 +183,9 @@ export const handleApiError = (error, response = null) => {
   }
 
   if (error.message.includes('HTTP error')) {
-    errorInfo.details = '服务器返回了错误状态码';
+    errorInfo.details = 'The server returned an error status code';
   } else if (error.message.includes('Failed to fetch')) {
-    errorInfo.details = '网络连接失败或服务器无响应';
+    errorInfo.details = 'Network connection failed or the server did not respond';
   }
 
   return errorInfo;
@@ -222,7 +222,7 @@ export const processGroupsData = (data, userGroup) => {
   if (groupOptions.length === 0) {
     groupOptions = [
       {
-        label: '用户分组',
+        label: 'User group',
         value: '',
         ratio: 1,
       },
@@ -346,7 +346,7 @@ export async function onCustomOAuthClicked(provider, options = {}) {
         provider.authorization_endpoint,
       );
       showError(
-        'OAuth 配置错误：授权端点必须是完整的 URL（以 http:// 或 https:// 开头）',
+        'OAuth configuration error: The authorization endpoint must be a full URL starting with http:// or https://',
       );
       return;
     }
@@ -363,7 +363,7 @@ export async function onCustomOAuthClicked(provider, options = {}) {
     redirectToOAuthUrl(authUrl);
   } catch (error) {
     console.error('Failed to initiate custom OAuth:', error);
-    showError('OAuth 登录失败：' + (error.message || '未知错误'));
+    showError('OAuth login failed: ' + (error.message || 'Unknown error'));
   }
 }
 

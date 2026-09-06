@@ -549,9 +549,9 @@ const NotificationSettings = ({
                           <CodeViewer
                             content={{
                               type: 'quota_exceed',
-                              title: '额度预警通知',
+                              title: 'Quota warning notification',
                               content:
-                                '您的额度即将用尽，当前剩余额度为 {{value}}',
+                                'Your quota is almost depleted. Remaining quota: {{value}}',
                               values: ['$0.99'],
                               timestamp: 1739950503,
                             }}
