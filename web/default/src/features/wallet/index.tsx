@@ -291,6 +291,9 @@ export function Wallet(props: WalletProps) {
                   enableWaffoPancakeTopup={
                     topupInfo?.enable_waffo_pancake_topup
                   }
+                  waffoPancakeMinTopup={
+                    topupInfo?.waffo_pancake_min_topup
+                  }
                   hideRedemption
                 />
               </div>
