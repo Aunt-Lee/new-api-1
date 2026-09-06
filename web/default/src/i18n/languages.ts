@@ -23,6 +23,7 @@ export const INTERFACE_LANGUAGE_OPTIONS = [
   { code: 'fr', label: 'Français' },
   { code: 'ru', label: 'Русский' },
   { code: 'ja', label: '日本語' },
+  { code: 'th', label: 'ไทย' },
   { code: 'vi', label: 'Tiếng Việt' },
   { code: 'zhTW', label: '繁體中文' }
 ] as const
@@ -39,6 +40,9 @@ export function normalizeInterfaceLanguage(value?: string | null): string {
   }
   if (value === 'zh-CN' || value === 'zh-Hans' || value === "zhCN") {
     normalized = 'zhCN'
+  }
+  if (normalized === 'th' || normalized.startsWith('th-')) {
+    normalized = 'th'
   }
 
   return INTERFACE_LANGUAGE_OPTIONS.some((lang) => lang.code === normalized)
@@ -58,6 +62,7 @@ export function normalizeInterfaceLanguage(value?: string | null): string {
  */
 export function convertDetectedLanguage(value: string): string {
   const lower = value.trim().replaceAll('_', '-').toLowerCase()
+  if (lower === 'th' || lower.startsWith('th-')) return 'th'
   if (!lower.startsWith('zh')) return value
   if (
     lower === 'zh-tw' ||

@@ -24,6 +24,7 @@ export const supportedLanguages = [
   'fr',
   'ru',
   'ja',
+  'th',
   'vi',
 ];
 
@@ -51,6 +52,10 @@ export const normalizeLanguage = (language) => {
     lower.startsWith('zh-hant')
   ) {
     return 'zh-TW';
+  }
+
+  if (lower === 'th' || lower.startsWith('th-')) {
+    return 'th';
   }
 
   const matchedLanguage = supportedLanguages.find(
