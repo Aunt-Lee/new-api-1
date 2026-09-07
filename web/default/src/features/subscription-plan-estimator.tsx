@@ -241,15 +241,17 @@ export function Plans() {
     const configMap = new Map(
       modelPricingConfig.map((model) => [model.name, model])
     )
-    return featuredModelNames.map((modelName) => {
-      const config = configMap.get(modelName)
-      return {
-        modelName,
-        officialInputPrice: config?.officialInputPrice,
-        officialOutputPrice: config?.officialOutputPrice,
-        pricing: pricingMap.get(modelName),
-      }
-    })
+    return featuredModelNames
+      .filter((modelName) => modelName !== 'gpt-5.6-luna')
+      .map((modelName) => {
+        const config = configMap.get(modelName)
+        return {
+          modelName,
+          officialInputPrice: config?.officialInputPrice,
+          officialOutputPrice: config?.officialOutputPrice,
+          pricing: pricingMap.get(modelName),
+        }
+      })
   }, [pricingQuery.data])
 
   const purchaseCountMap = useMemo(() => {
