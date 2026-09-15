@@ -326,6 +326,10 @@ export function Pricing() {
                               {t('Success rate')}
                             </span>
                             {activePerformanceGroups.map((group) => {
+                              const sourceModel =
+                                GROUP_PERFORMANCE_MODELS[
+                                  group as keyof typeof GROUP_PERFORMANCE_MODELS
+                                ]
                               const successRate = groupSuccessRates.get(group)
                               const successRateSeries =
                                 groupSuccessRateSeries.get(group) ?? []
@@ -335,6 +339,12 @@ export function Pricing() {
                                   key={group}
                                   className='flex items-center gap-2'
                                 >
+                                  <span
+                                    className='text-muted-foreground max-w-32 truncate font-mono'
+                                    title={sourceModel}
+                                  >
+                                    {sourceModel}
+                                  </span>
                                   {successRateSeries.length > 0 && (
                                     <UptimeSparkline
                                       size='sm'
