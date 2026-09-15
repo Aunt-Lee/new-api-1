@@ -323,7 +323,7 @@ export function Pricing() {
                         {activePerformanceGroups.length > 0 && (
                           <div className='flex shrink-0 items-center gap-2 border-l pl-3 text-xs'>
                             <span className='text-muted-foreground'>
-                              {t('Success rate')}
+                              {t('24h Success rate')}
                             </span>
                             {activePerformanceGroups.map((group) => {
                               const sourceModel =
