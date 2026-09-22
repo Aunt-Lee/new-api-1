@@ -112,6 +112,7 @@ const COLLAPSED_MODEL_ORDER = [
   'claude-sonnet-5',
   'gpt-6-astra',
   'gpt-5.6-sol',
+  'grok-4.7',
   'grok-4.6',
 ] as const
 

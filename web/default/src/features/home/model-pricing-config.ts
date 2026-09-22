@@ -62,6 +62,7 @@ export const featuredModelNames = [
   'gpt-5.6-sol',
   'gpt-5.6-luna',
   'gpt-5.5',
+  'grok-4.7',
   'grok-4.6',
 ] as const
 
@@ -140,6 +141,9 @@ export const modelPricingConfig: ModelPricingConfig[] = [
   {
     name: 'gpt-5.3-codex',
     cacheHit: '>93%',
+  },
+  {
+    name: 'grok-4.7',
   },
   {
     name: 'grok-4.6',
