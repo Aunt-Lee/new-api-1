@@ -108,10 +108,11 @@ interface HomeFAQItem {
 const COLLAPSED_MODEL_ORDER = [
   'claude-fable-5-1',
   'claude-fable-5',
-  'claude-opus-4-8',
+  'claude-opus-5-5',
   'claude-sonnet-5',
+  'gpt-6-luna',
+  'gpt-6-sol',
   'gpt-6-astra',
-  'gpt-5.6-sol',
   'grok-4.7',
   'grok-4.6',
 ] as const
@@ -469,6 +470,8 @@ export function Home() {
 
     const familyOrder = ['claude-', 'gpt-', 'grok-']
     const expandedGptOrder = [
+      'gpt-6-luna',
+      'gpt-6-sol',
       'gpt-6-astra',
       'gpt-5.6-sol',
       'gpt-5.6-terra',

@@ -55,13 +55,14 @@ export const pricingHeaderConfig = {
 
 export const featuredModelNames = [
   'claude-fable-5',
+  'claude-opus-5-5',
   'claude-opus-5',
-  'claude-opus-4-8',
   'claude-sonnet-5',
+  'gpt-6-luna',
+  'gpt-6-sol',
   'gpt-6-astra',
   'gpt-5.6-sol',
   'gpt-5.6-luna',
-  'gpt-5.5',
   'grok-4.7',
   'grok-4.6',
 ] as const
@@ -85,6 +86,10 @@ export const modelPricingConfig: ModelPricingConfig[] = [
     cacheHit: '>93%',
   },
   {
+    name: 'claude-opus-5-5',
+    cacheHit: '>93%',
+  },
+  {
     name: 'claude-opus-5',
     cacheHit: '>93%',
     officialInputPrice: 5,
@@ -96,6 +101,14 @@ export const modelPricingConfig: ModelPricingConfig[] = [
   },
   {
     name: 'claude-sonnet-5',
+    cacheHit: '>93%',
+  },
+  {
+    name: 'gpt-6-luna',
+    cacheHit: '>93%',
+  },
+  {
+    name: 'gpt-6-sol',
     cacheHit: '>93%',
   },
   {
