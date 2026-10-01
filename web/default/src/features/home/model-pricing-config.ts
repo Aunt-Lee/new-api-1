@@ -99,7 +99,15 @@ export const modelPricingConfig: ModelPricingConfig[] = [
     cacheHit: '>93%',
   },
   {
+    name: 'claude-sonnet-5-5',
+    cacheHit: '>93%',
+  },
+  {
     name: 'claude-sonnet-5',
+    cacheHit: '>93%',
+  },
+  {
+    name: 'gpt-6.1-sol',
     cacheHit: '>93%',
   },
   {
