@@ -29,6 +29,7 @@ func SetWebRouter(router *gin.Engine, assets ThemeAssets) {
 	router.Use(gzip.Gzip(gzip.DefaultCompression))
 	router.Use(middleware.GlobalWebRateLimit())
 	router.Use(middleware.Cache())
+	router.Use(publicPageMetadata())
 	router.Use(static.Serve("/", themeFS))
 	router.NoRoute(func(c *gin.Context) {
 		c.Set(middleware.RouteTagKey, "web")
@@ -43,4 +44,29 @@ func SetWebRouter(router *gin.Engine, assets ThemeAssets) {
 			c.Data(http.StatusOK, "text/html; charset=utf-8", assets.DefaultIndexPage)
 		}
 	})
+}
+
+// Canonical headers cover direct SPA requests without relying on JavaScript.
+func publicPageMetadata() gin.HandlerFunc {
+	return func(c *gin.Context) {
+		path := c.Request.URL.Path
+		if path == "/robots.txt" || path == "/sitemap.xml" || path == "/llms.txt" || strings.HasPrefix(path, "/guides/") {
+			c.Header("Cache-Control", "public, max-age=3600")
+			c.Next()
+			return
+		}
+		switch strings.TrimSuffix(path, "/") {
+		case "", "/pricing", "/plans", "/privacy-policy", "/user-agreement":
+			canonicalPath := strings.TrimSuffix(path, "/")
+			if canonicalPath == "" {
+				canonicalPath = "/"
+			}
+			c.Header("Link", "<https://newtonrouter.com"+canonicalPath+">; rel=\"canonical\"")
+		default:
+			if !strings.HasPrefix(path, "/static/") && (!strings.Contains(path, ".") || strings.HasSuffix(path, ".html")) {
+				c.Header("X-Robots-Tag", "noindex, nofollow")
+			}
+		}
+		c.Next()
+	}
 }

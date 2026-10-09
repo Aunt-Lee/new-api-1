@@ -586,6 +586,21 @@ export function Home() {
                       {t('90% off')}
                     </span>
                   </h1>
+                  <p className='text-muted-foreground mt-4 max-w-2xl text-base leading-relaxed'>
+                    {t(
+                      'NewtonRouter is a unified AI model API platform. With a single API address and key, you can access models such as GPT, Claude, and Grok. We are committed to providing a stable, affordable, and convenient model-switching experience.'
+                    )}
+                  </p>
+                  <a
+                    href={
+                      isChinese
+                        ? '/guides/getting-started-zh.html'
+                        : '/guides/getting-started.html'
+                    }
+                    className='text-primary mt-3 text-sm underline underline-offset-4'
+                  >
+                    {t('footer.columns.docs.title')}
+                  </a>
                   <div className='mt-4 flex w-full max-w-lg flex-col items-center justify-center gap-4 md:mt-6 md:flex-row'>
                     <div className='relative w-full flex-1'>
                       <Input

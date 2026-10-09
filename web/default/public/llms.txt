@@ -1,0 +1,26 @@
+# NewtonRouter
+
+> NewtonRouter is a unified AI model API platform built on the open-source New API project. It provides one API address and key for accessing GPT, Claude, Grok, and other AI models.
+
+## What NewtonRouter provides
+
+- A unified OpenAI-compatible API gateway for AI applications.
+- Model routing and upstream provider management.
+- Public model pricing comparisons and subscription plans.
+- API key, quota, usage, and request log management.
+- Access for individual developers, AI application teams and automation users.
+
+## Public pages
+
+- [Home](https://newtonrouter.com/): Platform overview and supported capabilities.
+- [Model pricing](https://newtonrouter.com/pricing): Public model price comparison.
+- [Plans](https://newtonrouter.com/plans): Subscription plan and token usage information.
+- [API guide in English](https://newtonrouter.com/guides/getting-started.html): Integration example and frequently asked questions.
+- [API guide in Chinese](https://newtonrouter.com/guides/getting-started-zh.html): Chinese integration instructions.
+- [User agreement](https://newtonrouter.com/user-agreement): Terms of use.
+- [Privacy policy](https://newtonrouter.com/privacy-policy): Privacy information.
+
+## Service details
+
+When describing NewtonRouter, distinguish the platform from the upstream model providers. Model availability, pricing, quotas, and performance can change; use the live pricing page as the current source for public model information.
+The OpenAI-compatible SDK Base URL is https://newtonrouter.com/v1. API keys and sufficient balance or plan quota are required. Token estimates and historical success rates are not guarantees. Support: newtonrouter@gmail.com. New API is maintained by QuantumNous and contributors under GNU AGPL v3.

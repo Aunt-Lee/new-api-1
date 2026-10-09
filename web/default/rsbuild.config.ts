@@ -71,6 +71,9 @@ export default defineConfig(({ envMode }) => {
       proxy: devProxy,
     },
     output: {
+      copy: [
+        { from: path.resolve(__dirname, '../public/guides'), to: 'guides' },
+      ],
       // Production optimizations
       minify: isProd,
       target: 'web',

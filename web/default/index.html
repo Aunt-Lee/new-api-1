@@ -5,6 +5,7 @@
     <link rel="icon" type="image/png" href="/logo.png" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <meta name="google" content="notranslate" />
+    <meta name="robots" content="index, follow, max-image-preview:large" />
     <meta name="waffo-verify" content="578c5bdd60587ecdf4e87db93cb09e2d" />
 
     <!-- Primary Meta Tags -->
@@ -12,8 +13,62 @@
     <meta name="title" content="New API" />
     <meta
       name="description"
-      content="Unified AI API gateway and admin dashboard."
+      content="Unified AI API gateway and admin dashboard. NewtonRouter provides a unified API for GPT, Claude and Grok, with model pricing, API keys and usage tracking."
     />
+
+    <!-- Open Graph -->
+    <meta property="og:type" content="website" />
+    <meta property="og:site_name" content="NewtonRouter" />
+    <meta property="og:title" content="NewtonRouter | Unified AI model API" />
+    <meta
+      property="og:description"
+      content="Access GPT, Claude and Grok with one API address and key. Compare model pricing and track usage."
+    />
+    <meta property="og:image" content="https://newtonrouter.com/logo.png" />
+
+    <!-- X / Twitter -->
+    <meta name="twitter:card" content="summary" />
+    <meta name="twitter:title" content="NewtonRouter | Unified AI model API" />
+    <meta
+      name="twitter:description"
+      content="Access GPT, Claude and Grok with one API address and key. Compare model pricing and track usage."
+    />
+    <meta name="twitter:image" content="https://newtonrouter.com/logo.png" />
+
+    <script type="application/ld+json">
+      {
+        "@context": "https://schema.org",
+        "@graph": [
+          {
+            "@type": "Organization",
+            "@id": "https://newtonrouter.com/#organization",
+            "name": "NewtonRouter",
+            "url": "https://newtonrouter.com/",
+            "logo": "https://newtonrouter.com/logo.png",
+            "email": "newtonrouter@gmail.com",
+            "sameAs": ["https://x.com/newtonrouter"]
+          },
+          {
+            "@type": "WebSite",
+            "@id": "https://newtonrouter.com/#website",
+            "url": "https://newtonrouter.com/",
+            "name": "NewtonRouter",
+            "publisher": {
+              "@id": "https://newtonrouter.com/#organization"
+            },
+            "inLanguage": ["zh-CN", "en"]
+          },
+          {
+            "@type": "WebApplication",
+            "name": "NewtonRouter",
+            "applicationCategory": "DeveloperApplication",
+            "operatingSystem": "Web",
+            "url": "https://newtonrouter.com/",
+            "description": "A unified AI model API platform with model pricing, API keys and usage tracking."
+          }
+        ]
+      }
+    </script>
 
     <meta name="theme-color" content="#fff" />
     <!--umami-->
@@ -21,6 +76,27 @@
   </head>
 
   <body>
+    <noscript>
+      <main>
+        <h1>NewtonRouter: unified AI model API platform</h1>
+        <p>
+          Access GPT, Claude and Grok with one API address and key. Compare
+          model prices, choose plans and track usage in NewtonRouter.
+        </p>
+        <p>
+          <a href="/guides/getting-started.html">Getting started (English)</a> ·
+          <a href="/guides/getting-started-zh.html" lang="zh-CN"
+            >接入指南（中文）</a
+          >
+          · <a href="/pricing">Model pricing</a> ·
+          <a href="/plans">Plans</a>
+        </p>
+        <p>
+          Built on New API by QuantumNous. Enable JavaScript to use the
+          interactive console.
+        </p>
+      </main>
+    </noscript>
     <div id="root" translate="no" class="notranslate"></div>
   </body>
 </html>
