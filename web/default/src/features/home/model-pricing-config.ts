@@ -147,6 +147,9 @@ export const modelPricingConfig: ModelPricingConfig[] = [
     cacheHit: '>93%',
   },
   {
+    name: 'claude-haiku-5-5',
+  },
+  {
     name: 'claude-haiku-4-5',
     cacheHit: '>93%',
   },
