@@ -10,6 +10,7 @@ import (
 	"github.com/QuantumNous/new-api/constant"
 	relaycommon "github.com/QuantumNous/new-api/relay/common"
 	"github.com/gin-gonic/gin"
+	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
 
@@ -151,7 +152,7 @@ func TestOpenaiImageStreamHandlerRecordsUpstreamErrorEvent(t *testing.T) {
 		`data: {"type":"image_generation.partial_image","b64_json":"partial"}`,
 		``,
 		`event: error`,
-		`data: {"type":"upstream_error","error":{"message":"stream error: stream ID 77; INTERNAL_ERROR; received from peer"}}`,
+		`data: {"type":"upstream_error","error":{"message":"\u4e0a\u6e38\u9519\u8bef: stream ID 77; INTERNAL_ERROR; received from peer"}}`,
 		``,
 	}, "\n")
 
@@ -166,8 +167,10 @@ func TestOpenaiImageStreamHandlerRecordsUpstreamErrorEvent(t *testing.T) {
 	require.Equal(t, 1, info.StreamStatus.TotalErrorCount())
 	require.Contains(t, info.StreamStatus.Errors[0].Message, "INTERNAL_ERROR")
 	// The scanner strips the upstream "event: error" line; the event name is
-	// rebuilt from the JSON "type" field (upstream_error). The error message
-	// is still forwarded in the data: payload (stream ID 77).
-	require.Contains(t, recorder.Body.String(), `event: upstream_error`)
-	require.Contains(t, recorder.Body.String(), `stream ID 77`)
+	// rebuilt from the JSON type; diagnostics remain internal only.
+	assert.Contains(t, recorder.Body.String(), `event: upstream_error`)
+	assert.Contains(t, recorder.Body.String(), `Upstream request failed`)
+	assert.NotContains(t, recorder.Body.String(), `stream ID 77`)
+	assert.NotContains(t, recorder.Body.String(), `INTERNAL_ERROR`)
+	assert.Contains(t, info.StreamStatus.Errors[0].Message, "\u4e0a\u6e38\u9519\u8bef")
 }

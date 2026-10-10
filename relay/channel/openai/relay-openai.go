@@ -23,6 +23,9 @@ func sendStreamData(c *gin.Context, info *relaycommon.RelayInfo, data string, fo
 	if data == "" {
 		return nil
 	}
+	if types.IsPublicErrorEvent([]byte(data)) {
+		return helper.StringData(c, data)
+	}
 
 	if !forceFormat && !thinkToContent {
 		return helper.StringData(c, data)

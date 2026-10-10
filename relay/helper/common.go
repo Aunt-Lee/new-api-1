@@ -8,6 +8,7 @@ import (
 	"github.com/QuantumNous/new-api/common"
 	"github.com/QuantumNous/new-api/dto"
 	"github.com/QuantumNous/new-api/logger"
+	"github.com/QuantumNous/new-api/service"
 	"github.com/QuantumNous/new-api/types"
 
 	"github.com/gin-gonic/gin"
@@ -67,6 +68,10 @@ func ClaudeData(c *gin.Context, resp dto.ClaudeResponse) error {
 	if err != nil {
 		common.SysError("error marshalling stream response: " + err.Error())
 	} else {
+		jsonData, err = service.SanitizePublicErrorResponse(c, jsonData, http.StatusInternalServerError)
+		if err != nil {
+			return err
+		}
 		c.Render(-1, common.CustomEvent{Data: fmt.Sprintf("event: %s\n", resp.Type)})
 		c.Render(-1, common.CustomEvent{Data: "data: " + string(jsonData)})
 	}
@@ -79,8 +84,12 @@ func ClaudeChunkData(c *gin.Context, resp dto.ClaudeResponse, data string) {
 		return
 	}
 
+	publicData, err := service.SanitizePublicErrorResponse(c, []byte(data), http.StatusInternalServerError)
+	if err != nil {
+		return
+	}
 	c.Render(-1, common.CustomEvent{Data: fmt.Sprintf("event: %s\n", resp.Type)})
-	c.Render(-1, common.CustomEvent{Data: fmt.Sprintf("data: %s\n", data)})
+	c.Render(-1, common.CustomEvent{Data: fmt.Sprintf("data: %s\n", publicData)})
 	_ = FlushWriter(c)
 }
 
@@ -89,8 +98,12 @@ func ResponseChunkData(c *gin.Context, resp dto.ResponsesStreamResponse, data st
 		return fmt.Errorf("request context done: %w", c.Request.Context().Err())
 	}
 
+	publicData, err := service.SanitizePublicErrorResponse(c, []byte(data), http.StatusInternalServerError)
+	if err != nil {
+		return err
+	}
 	c.Render(-1, common.CustomEvent{Data: fmt.Sprintf("event: %s\n", resp.Type)})
-	c.Render(-1, common.CustomEvent{Data: fmt.Sprintf("data: %s", data)})
+	c.Render(-1, common.CustomEvent{Data: fmt.Sprintf("data: %s", publicData)})
 	return FlushWriter(c)
 }
 
@@ -103,7 +116,11 @@ func StringData(c *gin.Context, str string) error {
 		return fmt.Errorf("request context done: %w", c.Request.Context().Err())
 	}
 
-	c.Render(-1, common.CustomEvent{Data: "data: " + str})
+	publicData, err := service.SanitizePublicErrorResponse(c, []byte(str), http.StatusInternalServerError)
+	if err != nil {
+		return err
+	}
+	c.Render(-1, common.CustomEvent{Data: "data: " + string(publicData)})
 	return FlushWriter(c)
 }
 

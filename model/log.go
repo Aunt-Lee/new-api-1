@@ -118,6 +118,25 @@ func formatUserLogs(logs []*Log, startIdx int) {
 		logs[i].ChannelName = ""
 		var otherMap map[string]interface{}
 		otherMap, _ = common.StrToMap(logs[i].Other)
+		if logs[i].Type == LogTypeError {
+			// Sanitize only user views, including historical logs. Administrator
+			// queries retain the original stored diagnostics without a migration.
+			publicError := types.OpenAIError{}
+			statusCode := 500
+			if otherMap != nil {
+				publicError.Type, _ = otherMap["error_type"].(string)
+				publicError.Code = otherMap["error_code"]
+				if status, ok := otherMap["status_code"].(float64); ok && status >= 400 && status <= 599 {
+					statusCode = int(status)
+				}
+			}
+			publicError = types.WithOpenAIError(publicError, statusCode).ToPublicOpenAIError("")
+			logs[i].Content = publicError.Message
+			if otherMap != nil {
+				otherMap["error_type"] = publicError.Type
+				otherMap["error_code"] = publicError.Code
+			}
+		}
 		if otherMap != nil {
 			// Remove admin-only debug fields.
 			delete(otherMap, "admin_info")

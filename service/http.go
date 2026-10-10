@@ -45,6 +45,16 @@ func IOCopyBytesGracefully(c *gin.Context, src *http.Response, data []byte) {
 	if c.Writer == nil {
 		return
 	}
+	statusCode := http.StatusOK
+	if src != nil {
+		statusCode = src.StatusCode
+	}
+	public, sanitizeErr := SanitizePublicErrorResponse(c, data, statusCode)
+	if sanitizeErr != nil {
+		logger.LogError(c, "failed to sanitize upstream error response: "+sanitizeErr.Error())
+		public, _ = common.Marshal(gin.H{"error": gin.H{"type": "upstream_error", "message": "Upstream request failed"}})
+	}
+	data = public
 
 	body := io.NopCloser(bytes.NewBuffer(data))
 
