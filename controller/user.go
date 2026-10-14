@@ -653,7 +653,7 @@ func GetUserModels(c *gin.Context) {
 
 func UpdateUser(c *gin.Context) {
 	var updatedUser model.User
-	err := json.NewDecoder(c.Request.Body).Decode(&updatedUser)
+	err := common.DecodeJson(c.Request.Body, &updatedUser)
 	if err != nil || updatedUser.Id == 0 {
 		common.ApiErrorI18n(c, i18n.MsgInvalidParams)
 		return
@@ -665,10 +665,6 @@ func UpdateUser(c *gin.Context) {
 	}
 	if updatedUser.Password == "" {
 		updatedUser.Password = "$I_LOVE_U" // make Validator happy :)
-	}
-	if err := common.Validate.Struct(&updatedUser); err != nil {
-		common.ApiErrorI18n(c, i18n.MsgUserInputInvalid, map[string]any{"Error": err.Error()})
-		return
 	}
 	originUser, err := model.GetUserById(updatedUser.Id, false)
 	if err != nil {
@@ -683,6 +679,16 @@ func UpdateUser(c *gin.Context) {
 	myRole := c.GetInt("role")
 	if !canManageTargetRole(myRole, originUser.Role) {
 		common.ApiErrorI18n(c, i18n.MsgUserNoPermissionHigherLevel)
+		return
+	}
+	validationUser := updatedUser
+	if updatedUser.DisplayName == originUser.DisplayName {
+		// OAuth and legacy accounts may already have names beyond the current
+		// input limit. Preserve them when editing unrelated fields.
+		validationUser.DisplayName = ""
+	}
+	if err := common.Validate.Struct(&validationUser); err != nil {
+		common.ApiErrorI18n(c, i18n.MsgUserInputInvalid, map[string]any{"Error": err.Error()})
 		return
 	}
 	if updatedUser.Password == "$I_LOVE_U" {
