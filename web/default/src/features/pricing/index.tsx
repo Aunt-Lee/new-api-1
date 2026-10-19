@@ -52,6 +52,7 @@ const GROUP_PERFORMANCE_MODELS = {
   'Claude Kiro': 'claude-sonnet-5',
   'Claude Max 20x': 'claude-sonnet-5',
   'Gpt Pro 20x': 'gpt-6.1-sol',
+  Luna: 'gpt-5.6-luna',
   'Grok Heavy': 'grok-4.5',
 } as const
 
