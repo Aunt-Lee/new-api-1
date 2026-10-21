@@ -50,8 +50,9 @@ import { getModelUsableGroupRatios } from './lib/model-helpers'
 
 const GROUP_PERFORMANCE_MODELS = {
   'Claude Kiro': 'claude-sonnet-5',
-  'Claude Max 20x': 'claude-sonnet-5',
-  'Gpt Pro 20x': 'gpt-6.1-sol',
+  'Claude Max': 'claude-sonnet-5',
+  'Gpt Pro': 'gpt-6.1-sol',
+  'Gpt Plus&Team': 'gpt-5.6-sol',
   Luna: 'gpt-5.6-luna',
   'Grok Heavy': 'grok-4.5',
 } as const
