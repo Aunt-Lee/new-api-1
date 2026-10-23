@@ -82,6 +82,14 @@ interface ModelPricingRow {
   discount: string
 }
 
+interface ModelPricingGroup {
+  value: string
+  label: string
+  prefix: string
+  rows: ModelPricingRow[]
+  defaultRows: ModelPricingRow[]
+}
+
 interface HomePricingResponse {
   data?: PricingModel[]
   group_ratio?: Record<string, number>
@@ -103,6 +111,31 @@ interface HomeFAQItem {
   answer: string
   translations?: ContentTranslations
 }
+
+const COLLAPSED_MODEL_ORDER = [
+  'claude-fable-5-1',
+  'claude-fable-5',
+  'claude-opus-5-5',
+  'claude-sonnet-5-5',
+  'gpt-6.1-sol',
+  'gpt-6-luna',
+  'gpt-6-sol',
+  'gpt-6-astra',
+  'grok-4.7',
+  'grok-4.6',
+  'deepseek-v4.1-flash',
+] as const
+
+const EXPANDED_GPT_ORDER = [
+  'gpt-6.1-sol',
+  'gpt-6-luna',
+  'gpt-6-sol',
+  'gpt-6-astra',
+  'gpt-5.6-sol',
+  'gpt-5.6-terra',
+  'gpt-5.6-luna',
+  'gpt-5.5',
+] as const
 
 const MODEL_SERIES = [
   { value: 'claude', label: 'Claude', prefix: 'claude-' },
@@ -274,6 +307,12 @@ export function Home() {
   const { config } = useSystemConfigStore()
   const [homePageContent, setHomePageContent] = useState('')
   const [homePageContentLoaded, setHomePageContentLoaded] = useState(false)
+  const [expandedPricingSeries, setExpandedPricingSeries] = useState<string[]>(
+    []
+  )
+  const [collapsedPricingSeries, setCollapsedPricingSeries] = useState<
+    string[]
+  >([])
   const isChinese = i18n.language.startsWith('zh')
   const isDemoSiteMode = config.demoSiteEnabled || false
   const { data: statusData } = useQuery<HomeStatusResponse>({
@@ -454,17 +493,41 @@ export function Home() {
   }, [pricingData, i18n.resolvedLanguage])
 
   const modelPricingGroups = useMemo(() => {
-    const groups: Array<{
-      value: string
-      label: string
-      prefix: string
-      rows: ModelPricingRow[]
-    }> = MODEL_SERIES.map((series) => ({
-      ...series,
-      rows: modelPricingRows.filter((row) =>
+    const preferredOrder = new Map<string, number>(
+      COLLAPSED_MODEL_ORDER.map((name, index) => [name, index])
+    )
+    const groups: ModelPricingGroup[] = MODEL_SERIES.map((series) => {
+      const rows = modelPricingRows.filter((row) =>
         row.name.startsWith(series.prefix)
-      ),
-    })).filter((group) => group.rows.length > 0)
+      )
+      if (series.value === 'gpt') {
+        const expandedOrder = new Map<string, number>(
+          EXPANDED_GPT_ORDER.map((name, index) => [name, index])
+        )
+        rows.sort((left, right) => {
+          const leftRank = expandedOrder.get(left.name)
+          const rightRank = expandedOrder.get(right.name)
+          if (leftRank === undefined && rightRank === undefined) return 0
+          if (leftRank === undefined) return 1
+          if (rightRank === undefined) return -1
+          return leftRank - rightRank
+        })
+      }
+
+      const defaultRows = rows
+        .filter((row) => preferredOrder.has(row.name))
+        .sort(
+          (left, right) =>
+            (preferredOrder.get(left.name) ?? Number.MAX_SAFE_INTEGER) -
+            (preferredOrder.get(right.name) ?? Number.MAX_SAFE_INTEGER)
+        )
+
+      return {
+        ...series,
+        rows,
+        defaultRows: defaultRows.length > 0 ? defaultRows : rows.slice(0, 2),
+      }
+    }).filter((group) => group.rows.length > 0)
     const otherRows = modelPricingRows.filter(
       (row) =>
         !MODEL_SERIES.some((series) => row.name.startsWith(series.prefix))
@@ -476,7 +539,12 @@ export function Home() {
         label: 'Other',
         prefix: '',
         rows: otherRows,
+        defaultRows: otherRows.filter((row) => preferredOrder.has(row.name)),
       })
+      const otherGroup = groups.at(-1)
+      if (otherGroup && otherGroup.defaultRows.length === 0) {
+        otherGroup.defaultRows = otherRows.slice(0, 2)
+      }
     }
 
     return groups
@@ -680,15 +748,31 @@ export function Home() {
                         {t('No pricing data available')}
                       </div>
                     ) : (
-                      <Accordion multiple className='w-full'>
+                      <Accordion
+                        multiple
+                        className='w-full'
+                        value={modelPricingGroups
+                          .filter(
+                            (group) =>
+                              !collapsedPricingSeries.includes(group.value)
+                          )
+                          .map((group) => group.value)}
+                        onValueChange={(value) =>
+                          setCollapsedPricingSeries(
+                            modelPricingGroups
+                              .filter((group) => !value.includes(group.value))
+                              .map((group) => group.value)
+                          )
+                        }
+                      >
                         {modelPricingGroups.map((group) => (
                           <AccordionItem
                             key={group.value}
                             value={group.value}
                             className='border-border/70 px-5'
                           >
-                            <AccordionTrigger className='py-3 hover:no-underline'>
-                              <span className='flex min-w-0 items-center gap-2'>
+                            <AccordionTrigger className='relative py-3 hover:no-underline'>
+                              <span className='absolute inset-x-10 flex items-center justify-center gap-2 text-center'>
                                 <span className='font-semibold'>
                                   {t(group.label)}
                                 </span>
@@ -698,7 +782,10 @@ export function Home() {
                               </span>
                             </AccordionTrigger>
                             <AccordionContent className='pb-0'>
-                              {group.rows.map((item) => (
+                              {(expandedPricingSeries.includes(group.value)
+                                ? group.rows
+                                : group.defaultRows
+                              ).map((item) => (
                                 <div
                                   key={item.name}
                                   className='hover:bg-muted/45 grid grid-cols-2 items-center gap-3 py-4 text-sm transition-colors md:grid-cols-5 md:gap-0 md:py-3.5'
@@ -761,6 +848,32 @@ export function Home() {
                                   </span>
                                 </div>
                               ))}
+                              {group.rows.length > group.defaultRows.length && (
+                                <div className='flex justify-center py-2'>
+                                  <Button
+                                    type='button'
+                                    variant='ghost'
+                                    size='sm'
+                                    onClick={() =>
+                                      setExpandedPricingSeries((current) =>
+                                        current.includes(group.value)
+                                          ? current.filter(
+                                              (value) => value !== group.value
+                                            )
+                                          : [...current, group.value]
+                                      )
+                                    }
+                                  >
+                                    {t(
+                                      expandedPricingSeries.includes(
+                                        group.value
+                                      )
+                                        ? 'Show Less'
+                                        : 'Show More'
+                                    )}
+                                  </Button>
+                                </div>
+                              )}
                             </AccordionContent>
                           </AccordionItem>
                         ))}
