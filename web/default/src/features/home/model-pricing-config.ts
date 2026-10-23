@@ -25,6 +25,7 @@ export interface ModelPricingConfig {
   name: string
   icon?: string
   cacheHit?: string
+  pricingNote?: string
   officialInputPrice?: number
   officialOutputPrice?: number
 }
@@ -176,5 +177,12 @@ export const modelPricingConfig: ModelPricingConfig[] = [
   },
   {
     name: 'grok-4.3',
+  },
+  {
+    name: 'deepseek-v4-pro',
+  },
+  {
+    name: 'deepseek-v4.1-flash',
+    pricingNote: 'Low Cache',
   },
 ]

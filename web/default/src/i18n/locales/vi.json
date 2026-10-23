@@ -2537,6 +2537,7 @@
     "Logs": "Nhật ký",
     "Look for a special ratio rule matching this user group and this billing group. If one exists, use its ratio. Otherwise use the billing group base ratio from the pricing table.": "Tìm quy tắc hệ số đặc biệt khớp với nhóm người dùng và nhóm tính phí này. Nếu có thì dùng hệ số của quy tắc, nếu không thì dùng hệ số cơ bản của nhóm tính phí trong bảng định giá.",
     "Low balance": "Số dư thấp",
+    "Low Cache": "Bộ nhớ đệm thấp",
     "Lowest median first-token latency": "Độ trễ trung vị token đầu tiên thấp nhất",
     "m": "m",
     "Maintenance": "Bảo trì",

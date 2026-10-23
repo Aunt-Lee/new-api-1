@@ -30,6 +30,7 @@ import {
   ItemTitle,
 } from '@/components/ui/item'
 import { Separator } from '@/components/ui/separator'
+import { modelPricingConfig } from '@/features/home/model-pricing-config'
 import { useCopyToClipboard } from '@/hooks/use-copy-to-clipboard'
 import { cn } from '@/lib/utils'
 
@@ -56,6 +57,12 @@ type PriceMetric = {
   accent?: boolean
 }
 
+const modelPricingNotes = new Map(
+  modelPricingConfig
+    .filter((model) => model.pricingNote)
+    .map((model) => [model.name, model.pricingNote])
+)
+
 export function PricingModelList(props: PricingModelListProps) {
   const { t } = useTranslation()
   const { copyToClipboard } = useCopyToClipboard()
@@ -69,6 +76,7 @@ export function PricingModelList(props: PricingModelListProps) {
       <CardContent className='p-0'>
         <ItemGroup className='gap-0'>
           {props.models.map((model, modelIndex) => {
+            const pricingNote = modelPricingNotes.get(model.model_name)
             const selectedGroup = model.enable_groups.find(
               (group) => model.group_ratio?.[group] === props.selectedRatio
             )
@@ -195,6 +203,11 @@ export function PricingModelList(props: PricingModelListProps) {
                         <Copy aria-hidden='true' />
                       </Button>
                     </ItemTitle>
+                    {pricingNote && (
+                      <span className='text-muted-foreground text-xs'>
+                        {t(pricingNote)}
+                      </span>
+                    )}
                   </ItemContent>
                   <ItemActions className='grid min-w-0 grid-cols-2 gap-x-4 gap-y-3 xl:grid-cols-4'>
                     {metrics.map((metric) => (

@@ -2537,6 +2537,7 @@
     "Logs": "บันทึกการใช้งาน",
     "Look for a special ratio rule matching this user group and this billing group. If one exists, use its ratio. Otherwise use the billing group base ratio from the pricing table.": "Look for a special ratio rule matching this user group and this billing group. If one exists, use its ratio. Otherwise use the billing group base ratio from the pricing table.",
     "Low balance": "Low balance",
+    "Low Cache": "แคชต่ำ",
     "Lowest median first-token latency": "Lowest median first-token latency",
     "m": "m",
     "Maintenance": "Maintenance",

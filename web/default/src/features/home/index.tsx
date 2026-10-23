@@ -116,6 +116,7 @@ const COLLAPSED_MODEL_ORDER = [
   'gpt-6-astra',
   'grok-4.7',
   'grok-4.6',
+  'deepseek-v4.1-flash',
 ] as const
 
 const TRUST_SIGNALS = [
@@ -134,6 +135,7 @@ function getHomeModelIcon(modelName: string, configuredIcon?: string): string {
   if (configuredIcon) return configuredIcon
   if (modelName.startsWith('claude-')) return 'Claude.Color'
   if (modelName.startsWith('grok-')) return 'Grok.Color'
+  if (modelName.startsWith('deepseek-')) return 'DeepSeek.Color'
   return 'OpenAI.Color'
 }
 
@@ -469,7 +471,7 @@ export function Home() {
       )
     }
 
-    const familyOrder = ['claude-', 'gpt-', 'grok-']
+    const familyOrder = ['claude-', 'gpt-', 'grok-', 'deepseek-']
     const expandedGptOrder = [
       'gpt-6.1-sol',
       'gpt-6-luna',
