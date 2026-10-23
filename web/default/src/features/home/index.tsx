@@ -20,7 +20,6 @@ import { useQuery } from '@tanstack/react-query'
 import { Link } from '@tanstack/react-router'
 import {
   BadgeCheck,
-  Cable,
   Check,
   Copy,
   EyeOff,
@@ -105,23 +104,15 @@ interface HomeFAQItem {
   translations?: ContentTranslations
 }
 
-const COLLAPSED_MODEL_ORDER = [
-  'claude-fable-5-1',
-  'claude-fable-5',
-  'claude-opus-5-5',
-  'claude-sonnet-5-5',
-  'gpt-6.1-sol',
-  'gpt-6-luna',
-  'gpt-6-sol',
-  'gpt-6-astra',
-  'grok-4.7',
-  'grok-4.6',
-  'deepseek-v4.1-flash',
+const MODEL_SERIES = [
+  { value: 'claude', label: 'Claude', prefix: 'claude-' },
+  { value: 'gpt', label: 'GPT', prefix: 'gpt-' },
+  { value: 'grok', label: 'Grok', prefix: 'grok-' },
+  { value: 'deepseek', label: 'DeepSeek', prefix: 'deepseek-' },
 ] as const
 
 const TRUST_SIGNALS = [
-  { label: 'Officially funded accounts', icon: BadgeCheck },
-  { label: 'Direct official access', icon: Cable },
+  { label: 'Tier-1 channels', icon: BadgeCheck },
   { label: 'Stable high concurrency', icon: Gauge },
   { label: 'No model downgrades or substitutions', icon: ShieldCheck },
   { label: 'Zero retention', icon: EyeOff },
@@ -283,7 +274,6 @@ export function Home() {
   const { config } = useSystemConfigStore()
   const [homePageContent, setHomePageContent] = useState('')
   const [homePageContentLoaded, setHomePageContentLoaded] = useState(false)
-  const [showAllPricingModels, setShowAllPricingModels] = useState(false)
   const isChinese = i18n.language.startsWith('zh')
   const isDemoSiteMode = config.demoSiteEnabled || false
   const { data: statusData } = useQuery<HomeStatusResponse>({
@@ -463,47 +453,34 @@ export function Home() {
       .filter((item): item is ModelPricingRow => item !== null)
   }, [pricingData, i18n.resolvedLanguage])
 
-  const visibleModelPricingRows = useMemo(() => {
-    if (!showAllPricingModels) {
-      const rowsByName = new Map(modelPricingRows.map((row) => [row.name, row]))
-      return COLLAPSED_MODEL_ORDER.map((name) => rowsByName.get(name)).filter(
-        (row): row is ModelPricingRow => row !== undefined
-      )
+  const modelPricingGroups = useMemo(() => {
+    const groups: Array<{
+      value: string
+      label: string
+      prefix: string
+      rows: ModelPricingRow[]
+    }> = MODEL_SERIES.map((series) => ({
+      ...series,
+      rows: modelPricingRows.filter((row) =>
+        row.name.startsWith(series.prefix)
+      ),
+    })).filter((group) => group.rows.length > 0)
+    const otherRows = modelPricingRows.filter(
+      (row) =>
+        !MODEL_SERIES.some((series) => row.name.startsWith(series.prefix))
+    )
+
+    if (otherRows.length > 0) {
+      groups.push({
+        value: 'other',
+        label: 'Other',
+        prefix: '',
+        rows: otherRows,
+      })
     }
 
-    const familyOrder = ['claude-', 'gpt-', 'grok-', 'deepseek-']
-    const expandedGptOrder = [
-      'gpt-6.1-sol',
-      'gpt-6-luna',
-      'gpt-6-sol',
-      'gpt-6-astra',
-      'gpt-5.6-sol',
-      'gpt-5.6-terra',
-      'gpt-5.6-luna',
-      'gpt-5.5',
-    ]
-    return [...modelPricingRows].sort((left, right) => {
-      const leftFamily = familyOrder.findIndex((prefix) =>
-        left.name.startsWith(prefix)
-      )
-      const rightFamily = familyOrder.findIndex((prefix) =>
-        right.name.startsWith(prefix)
-      )
-      if (leftFamily !== rightFamily) return leftFamily - rightFamily
-
-      if (left.name.startsWith('gpt-') && right.name.startsWith('gpt-')) {
-        const leftRank = expandedGptOrder.indexOf(left.name)
-        const rightRank = expandedGptOrder.indexOf(right.name)
-        if (leftRank !== -1 || rightRank !== -1) {
-          if (leftRank === -1) return 1
-          if (rightRank === -1) return -1
-          return leftRank - rightRank
-        }
-      }
-
-      return 0
-    })
-  }, [modelPricingRows, showAllPricingModels])
+    return groups
+  }, [modelPricingRows])
 
   const displayHomePageContent = async () => {
     const cached = localStorage.getItem('home_page_content') || ''
@@ -703,75 +680,91 @@ export function Home() {
                         {t('No pricing data available')}
                       </div>
                     ) : (
-                      visibleModelPricingRows.map((item) => (
-                        <div
-                          key={item.name}
-                          className='hover:bg-muted/45 grid grid-cols-2 items-center gap-3 px-5 py-4 text-sm transition-colors md:grid-cols-5 md:gap-0 md:py-3.5'
-                        >
-                          <span
-                            className='text-foreground col-span-2 flex min-w-0 items-center gap-2 text-left font-medium md:col-span-1 md:min-w-[180px] md:pr-2'
-                            title={item.name}
+                      <Accordion multiple className='w-full'>
+                        {modelPricingGroups.map((group) => (
+                          <AccordionItem
+                            key={group.value}
+                            value={group.value}
+                            className='border-border/70 px-5'
                           >
-                            <span className='shrink-0' aria-hidden='true'>
-                              {getLobeIcon(item.icon, 18)}
-                            </span>
-                            <span className='truncate'>{item.name}</span>
-                          </span>
-                          <span className='bg-muted/35 flex flex-col gap-1 rounded-xl p-2 text-left md:hidden'>
-                            <span className='text-muted-foreground text-xs'>
-                              {t(pricingHeaderConfig.input)}
-                            </span>
-                            <span className='text-foreground font-mono font-medium'>
-                              {item.inputPrice}
-                            </span>
-                          </span>
-                          <span className='bg-muted/35 flex flex-col gap-1 rounded-xl p-2 text-left md:hidden'>
-                            <span className='text-muted-foreground text-xs'>
-                              {t(pricingHeaderConfig.output)}
-                            </span>
-                            <span className='text-foreground font-mono font-medium'>
-                              {item.outputPrice}
-                            </span>
-                          </span>
-                          <span className='text-muted-foreground hidden text-center font-mono md:block'>
-                            {item.inputPrice}
-                          </span>
-                          <span className='text-muted-foreground hidden text-center font-mono md:block'>
-                            {item.outputPrice}
-                          </span>
-                          <span className='text-muted-foreground flex flex-col gap-1 text-left font-mono md:block md:text-center'>
-                            <span className='text-muted-foreground text-xs md:hidden'>
-                              {t(pricingHeaderConfig.official)}
-                            </span>
-                            <span>
-                              {item.officialInput} / {item.officialOutput}
-                            </span>
-                          </span>
-                          <span className='flex flex-col gap-1 text-left md:block md:text-center'>
-                            <span className='text-muted-foreground text-xs md:hidden'>
-                              {t(pricingHeaderConfig.discount)}
-                            </span>
-                            <Badge variant='outline' className='font-mono'>
-                              {item.discount}
-                            </Badge>
-                          </span>
-                        </div>
-                      ))
-                    )}
-
-                    {modelPricingRows.length > 6 && (
-                      <div className='flex justify-center px-5 py-4'>
-                        <Button
-                          type='button'
-                          variant='ghost'
-                          size='sm'
-                          onClick={() =>
-                            setShowAllPricingModels((visible) => !visible)
-                          }
-                        >
-                          {t(showAllPricingModels ? 'Show Less' : 'Show More')}
-                        </Button>
-                      </div>
+                            <AccordionTrigger className='py-3 hover:no-underline'>
+                              <span className='flex min-w-0 items-center gap-2'>
+                                <span className='font-semibold'>
+                                  {t(group.label)}
+                                </span>
+                                <Badge variant='secondary' className='shrink-0'>
+                                  {group.rows.length}
+                                </Badge>
+                              </span>
+                            </AccordionTrigger>
+                            <AccordionContent className='pb-0'>
+                              {group.rows.map((item) => (
+                                <div
+                                  key={item.name}
+                                  className='hover:bg-muted/45 grid grid-cols-2 items-center gap-3 py-4 text-sm transition-colors md:grid-cols-5 md:gap-0 md:py-3.5'
+                                >
+                                  <span
+                                    className='text-foreground col-span-2 flex min-w-0 items-center gap-2 text-left font-medium md:col-span-1 md:min-w-[180px] md:pr-2'
+                                    title={item.name}
+                                  >
+                                    <span
+                                      className='shrink-0'
+                                      aria-hidden='true'
+                                    >
+                                      {getLobeIcon(item.icon, 18)}
+                                    </span>
+                                    <span className='truncate'>
+                                      {item.name}
+                                    </span>
+                                  </span>
+                                  <span className='bg-muted/35 flex flex-col gap-1 rounded-xl p-2 text-left md:hidden'>
+                                    <span className='text-muted-foreground text-xs'>
+                                      {t(pricingHeaderConfig.input)}
+                                    </span>
+                                    <span className='text-foreground font-mono font-medium'>
+                                      {item.inputPrice}
+                                    </span>
+                                  </span>
+                                  <span className='bg-muted/35 flex flex-col gap-1 rounded-xl p-2 text-left md:hidden'>
+                                    <span className='text-muted-foreground text-xs'>
+                                      {t(pricingHeaderConfig.output)}
+                                    </span>
+                                    <span className='text-foreground font-mono font-medium'>
+                                      {item.outputPrice}
+                                    </span>
+                                  </span>
+                                  <span className='text-muted-foreground hidden text-center font-mono md:block'>
+                                    {item.inputPrice}
+                                  </span>
+                                  <span className='text-muted-foreground hidden text-center font-mono md:block'>
+                                    {item.outputPrice}
+                                  </span>
+                                  <span className='text-muted-foreground flex flex-col gap-1 text-left font-mono md:block md:text-center'>
+                                    <span className='text-muted-foreground text-xs md:hidden'>
+                                      {t(pricingHeaderConfig.official)}
+                                    </span>
+                                    <span>
+                                      {item.officialInput} /{' '}
+                                      {item.officialOutput}
+                                    </span>
+                                  </span>
+                                  <span className='flex flex-col gap-1 text-left md:block md:text-center'>
+                                    <span className='text-muted-foreground text-xs md:hidden'>
+                                      {t(pricingHeaderConfig.discount)}
+                                    </span>
+                                    <Badge
+                                      variant='outline'
+                                      className='font-mono'
+                                    >
+                                      {item.discount}
+                                    </Badge>
+                                  </span>
+                                </div>
+                              ))}
+                            </AccordionContent>
+                          </AccordionItem>
+                        ))}
+                      </Accordion>
                     )}
                   </CardContent>
                 </Card>

@@ -55,6 +55,7 @@ const GROUP_PERFORMANCE_MODELS = {
   'Gpt Plus&Team': 'gpt-5.6-sol',
   Luna: 'gpt-5.6-luna',
   'Grok Heavy': 'grok-4.5',
+  DeepSeek: 'deepseek-v4.1-flash',
 } as const
 
 const PERFORMANCE_SOURCE_MODELS = [
