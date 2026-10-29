@@ -17,11 +17,13 @@ along with this program. If not, see <https://www.gnu.org/licenses/>.
 For commercial licensing, please contact support@quantumnous.com
 */
 import { useMemo } from 'react'
+import { useQuery } from '@tanstack/react-query'
 import { useTranslation } from 'react-i18next'
 
 import { useStatus } from '@/hooks/use-status'
 import { parseHeaderNavModulesFromStatus } from '@/lib/nav-modules'
 import { useAuthStore } from '@/stores/auth-store'
+import { getPublicPlans } from '@/features/subscriptions/api'
 
 export type TopNavLink = {
   title: string
@@ -60,6 +62,19 @@ export function useTopNavLinks(): TopNavLink[] {
 
   const isAuthed = !!auth?.user
 
+  // Discount Plans entry point: only show the top-nav link when public plans
+  // actually exist. Reuses the same public plans endpoint as the home page and
+  // the plans estimator; React Query dedupes the request across headers.
+  const { data: plansData } = useQuery({
+    queryKey: ['home-subscription-plans'],
+    queryFn: getPublicPlans,
+    staleTime: 5 * 60 * 1000,
+  })
+  // Keep the link visible during initial load / on error to avoid flicker; hide
+  // it only once we've confirmed there are zero public plans.
+  const hasDiscountPlans =
+    plansData === undefined ? true : (plansData?.data?.length ?? 0) > 0
+
   const links: TopNavLink[] = []
 
   // Home
@@ -79,7 +94,9 @@ export function useTopNavLinks(): TopNavLink[] {
     links.push({ title: t('Model Square'), href: '/pricing', requiresAuth })
   }
 
-  links.push({ title: t('Discount Plans'), href: '/plans' })
+  if (hasDiscountPlans) {
+    links.push({ title: t('Discount Plans'), href: '/plans' })
+  }
 
   // Rankings
   const rankings = modules?.rankings
