@@ -694,14 +694,14 @@ export function Home() {
                   )}
                 </div>
 
-                <ul className='mt-10 grid w-full max-w-5xl grid-cols-2 gap-x-5 gap-y-4 py-5 sm:grid-cols-3 lg:grid-cols-5'>
+                <ul className='mt-10 grid w-full max-w-5xl grid-cols-2 gap-x-5 gap-y-4 py-5 sm:grid-cols-3 lg:grid-cols-4'>
                   {TRUST_SIGNALS.map((signal) => {
                     const Icon = signal.icon
 
                     return (
                       <li
                         key={signal.label}
-                        className='text-foreground flex min-w-0 items-center gap-2.5 text-left text-sm font-medium'
+                        className='text-foreground flex min-w-0 items-center justify-center gap-2.5 text-center text-sm font-medium'
                       >
                         <span className='bg-primary/10 text-primary flex size-8 shrink-0 items-center justify-center rounded-lg'>
                           <Icon aria-hidden='true' className='size-4' />
