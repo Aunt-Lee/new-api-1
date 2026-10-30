@@ -42,7 +42,6 @@ import {
 import { formatLocalCurrencyAmount, getCurrencyDisplay } from '@/lib/currency'
 import { cn } from '@/lib/utils'
 
-import { PAYMENT_TYPES } from '../constants'
 import {
   formatCurrency,
   getDiscountLabel,
@@ -86,8 +85,6 @@ interface RechargeFormCardProps {
   waffoPayMethods?: WaffoPayMethod[]
   waffoMinTopup?: number
   onWaffoMethodSelect?: (method: WaffoPayMethod, index: number) => void
-  enableWaffoPancakeTopup?: boolean
-  waffoPancakeMinTopup?: number
   hideRedemption?: boolean
 }
 
@@ -118,8 +115,6 @@ export function RechargeFormCard({
   waffoPayMethods,
   waffoMinTopup,
   onWaffoMethodSelect,
-  enableWaffoPancakeTopup,
-  waffoPancakeMinTopup = 0,
   hideRedemption = false,
 }: RechargeFormCardProps) {
   const { t } = useTranslation()
@@ -143,8 +138,7 @@ export function RechargeFormCard({
   const hasConfigurableTopup =
     topupInfo?.enable_online_topup ||
     topupInfo?.enable_stripe_topup ||
-    enableWaffoTopup ||
-    enableWaffoPancakeTopup
+    enableWaffoTopup
   const hasAnyTopup = hasConfigurableTopup || enableCreemTopup
   const hasStandardPaymentMethods =
     Array.isArray(topupInfo?.pay_methods) && topupInfo.pay_methods.length > 0
@@ -392,44 +386,6 @@ export function RechargeFormCard({
                         button
                       )
                     })}
-                    {enableWaffoPancakeTopup && (
-                      <Button
-                        variant='outline'
-                        onClick={() =>
-                          onPaymentMethodSelect({
-                            name: t('WeChat Pay'),
-                            type: PAYMENT_TYPES.WAFFO_PANCAKE,
-                            min_topup: waffoPancakeMinTopup,
-                          })
-                        }
-                        disabled={
-                          waffoPancakeMinTopup > topupAmount || !!paymentLoading
-                        }
-                        title={
-                          waffoPancakeMinTopup > topupAmount
-                            ? t('Minimum topup amount: {{amount}}', {
-                                amount: waffoPancakeMinTopup,
-                              })
-                            : undefined
-                        }
-                        aria-label={t('WeChat Pay')}
-                        className='min-h-14 min-w-0 justify-start gap-2 rounded-lg px-3 py-2 text-left'
-                      >
-                        {paymentLoading === PAYMENT_TYPES.WAFFO_PANCAKE ? (
-                          <Loader2 className='h-4 w-4 animate-spin' />
-                        ) : (
-                          getPaymentIcon(
-                            PAYMENT_TYPES.WECHAT,
-                            'h-4 w-4',
-                            undefined,
-                            t('WeChat Pay')
-                          )
-                        )}
-                        <span className='max-w-full truncate'>
-                          {t('WeChat Pay')}
-                        </span>
-                      </Button>
-                    )}
                   </div>
                 ) : hasWaffoPaymentMethods ? null : (
                   <Alert>
