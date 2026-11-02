@@ -53,17 +53,11 @@ const GROUP_PERFORMANCE_MODELS = {
   'Claude Kiro': 'claude-sonnet-5',
   'Claude Max': 'claude-sonnet-5',
   'Gpt Pro': 'gpt-6.1-sol',
-  'Gpt Plus&Team': 'gpt-5.6-sol',
+  'Gpt Plus&Team': 'gpt-6.1-sol',
   Luna: 'gpt-5.6-luna',
   'Grok Heavy': 'grok-4.5',
   DeepSeek: 'deepseek-v4.1-flash',
 } as const
-
-// Quality tags shown inline after a tab's name: icon only while the tab is
-// inactive, icon + text once selected. Value is an i18n key.
-const GROUP_TAGS: Record<string, string> = {
-  'Gpt Pro': 'No model downgrade',
-}
 
 // Vendor tags keyed by lowercased vendor name.
 const VENDOR_TAGS: Record<string, string> = {
@@ -336,17 +330,6 @@ export function Pricing() {
                                             </span>
                                           )}
                                           {group}
-                                          {GROUP_TAGS[group] && (
-                                            <span className='ml-0.5 inline-flex items-center gap-1 text-emerald-500 align-middle'>
-                                              <ShieldCheck className='h-3.5 w-3.5' />
-                                              {option.ratio ===
-                                                activeRatio && (
-                                                <span className='text-[10px] leading-none'>
-                                                  {t(GROUP_TAGS[group])}
-                                                </span>
-                                              )}
-                                            </span>
-                                          )}
                                         </span>
                                       ))}
                                     </span>
