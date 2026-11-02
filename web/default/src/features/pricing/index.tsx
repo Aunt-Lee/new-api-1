@@ -58,6 +58,12 @@ const GROUP_PERFORMANCE_MODELS = {
   DeepSeek: 'deepseek-v4.1-flash',
 } as const
 
+// Compact quality badges rendered next to a group's name on the ratio tab.
+// Icon-only with a tooltip to keep the tab narrow; value is an i18n key.
+const GROUP_TAGS: Record<string, string> = {
+  'Gpt Pro': 'No model downgrade',
+}
+
 const PERFORMANCE_SOURCE_MODELS = [
   ...new Set(Object.values(GROUP_PERFORMANCE_MODELS)),
 ]
@@ -294,14 +300,23 @@ export function Pricing() {
                               setSelectedRatio(Number(value))
                             }
                           >
-                            <TabsList className='h-10 w-max justify-start'>
-                              {ratioOptions.map((option) => (
-                                <TabsTrigger
-                                  key={option.ratio}
-                                  value={String(option.ratio)}
-                                  className='h-9 flex-none gap-1.5 px-3'
-                                >
-                                  {option.groups.length > 0 && (
+                            <TabsList className='h-auto min-h-10 w-max justify-start'>
+                              {ratioOptions.map((option) => {
+                                const optionTags = [
+                                  ...new Set(
+                                    option.groups.flatMap((group) =>
+                                      GROUP_TAGS[group]
+                                        ? [GROUP_TAGS[group]]
+                                        : []
+                                    )
+                                  ),
+                                ]
+                                return (
+                                  <TabsTrigger
+                                    key={option.ratio}
+                                    value={String(option.ratio)}
+                                    className='h-auto min-h-9 flex-none flex-col gap-0.5 px-3 py-1'
+                                  >
                                     <span className='flex items-center gap-1.5'>
                                       {option.groups.map((group, index) => (
                                         <span key={group}>
@@ -313,13 +328,20 @@ export function Pricing() {
                                           {group}
                                         </span>
                                       ))}
+                                      <span className='font-mono'>
+                                        ({option.ratio}x)
+                                      </span>
                                     </span>
-                                  )}
-                                  <span className='font-mono'>
-                                    ({option.ratio}x)
-                                  </span>
-                                </TabsTrigger>
-                              ))}
+                                    {optionTags.length > 0 && (
+                                      <span className='text-[10px] leading-none text-emerald-500'>
+                                        {optionTags
+                                          .map((tag) => t(tag))
+                                          .join(' · ')}
+                                      </span>
+                                    )}
+                                  </TabsTrigger>
+                                )
+                              })}
                             </TabsList>
                           </Tabs>
                         </div>

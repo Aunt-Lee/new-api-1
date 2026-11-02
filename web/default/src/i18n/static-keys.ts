@@ -180,6 +180,7 @@ export const STATIC_I18N_KEYS = [
   'Officially funded accounts',
   'Direct official access',
   'Stable high concurrency',
+  'No model downgrade',
   'No model downgrades or substitutions',
   'Zero retention',
   'Official Input / Output (1M)',
