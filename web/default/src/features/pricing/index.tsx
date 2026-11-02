@@ -17,6 +17,7 @@ along with this program. If not, see <https://www.gnu.org/licenses/>.
 For commercial licensing, please contact support@quantumnous.com
 */
 import { useQueries } from '@tanstack/react-query'
+import { ShieldCheck } from 'lucide-react'
 import { useMemo, useState } from 'react'
 import { useTranslation } from 'react-i18next'
 
@@ -58,10 +59,15 @@ const GROUP_PERFORMANCE_MODELS = {
   DeepSeek: 'deepseek-v4.1-flash',
 } as const
 
-// Compact quality badges rendered next to a group's name on the ratio tab.
-// Icon-only with a tooltip to keep the tab narrow; value is an i18n key.
+// Quality tags shown inline after a tab's name: icon only while the tab is
+// inactive, icon + text once selected. Value is an i18n key.
 const GROUP_TAGS: Record<string, string> = {
   'Gpt Pro': 'No model downgrade',
+}
+
+// Vendor tags keyed by lowercased vendor name.
+const VENDOR_TAGS: Record<string, string> = {
+  openai: 'No model downgrade',
 }
 
 const PERFORMANCE_SOURCE_MODELS = [
@@ -272,16 +278,29 @@ export function Pricing() {
                     }}
                   >
                     <TabsList className='h-10 w-max justify-start'>
-                      {visibleVendors.map((vendor) => (
-                        <TabsTrigger
-                          key={vendor.id}
-                          value={String(vendor.id)}
-                          className='h-9 flex-none px-4'
-                        >
-                          {vendor.icon && getLobeIcon(vendor.icon, 16)}
-                          {vendor.name}
-                        </TabsTrigger>
-                      ))}
+                      {visibleVendors.map((vendor) => {
+                        const vendorTag = VENDOR_TAGS[vendor.name.toLowerCase()]
+                        return (
+                          <TabsTrigger
+                            key={vendor.id}
+                            value={String(vendor.id)}
+                            className='h-9 flex-none px-4'
+                          >
+                            {vendor.icon && getLobeIcon(vendor.icon, 16)}
+                            {vendor.name}
+                            {vendorTag && (
+                              <span className='ml-0.5 inline-flex items-center gap-1 text-emerald-500'>
+                                <ShieldCheck className='h-3.5 w-3.5' />
+                                {String(vendor.id) === activeVendor && (
+                                  <span className='text-[10px] leading-none'>
+                                    {t(vendorTag)}
+                                  </span>
+                                )}
+                              </span>
+                            )}
+                          </TabsTrigger>
+                        )
+                      })}
                     </TabsList>
                   </Tabs>
                 </div>
@@ -300,23 +319,14 @@ export function Pricing() {
                               setSelectedRatio(Number(value))
                             }
                           >
-                            <TabsList className='h-auto min-h-10 w-max justify-start'>
-                              {ratioOptions.map((option) => {
-                                const optionTags = [
-                                  ...new Set(
-                                    option.groups.flatMap((group) =>
-                                      GROUP_TAGS[group]
-                                        ? [GROUP_TAGS[group]]
-                                        : []
-                                    )
-                                  ),
-                                ]
-                                return (
-                                  <TabsTrigger
-                                    key={option.ratio}
-                                    value={String(option.ratio)}
-                                    className='h-auto min-h-9 flex-none flex-col gap-0.5 px-3 py-1'
-                                  >
+                            <TabsList className='h-10 w-max justify-start'>
+                              {ratioOptions.map((option) => (
+                                <TabsTrigger
+                                  key={option.ratio}
+                                  value={String(option.ratio)}
+                                  className='h-9 flex-none gap-1.5 px-3'
+                                >
+                                  {option.groups.length > 0 && (
                                     <span className='flex items-center gap-1.5'>
                                       {option.groups.map((group, index) => (
                                         <span key={group}>
@@ -326,22 +336,26 @@ export function Pricing() {
                                             </span>
                                           )}
                                           {group}
+                                          {GROUP_TAGS[group] && (
+                                            <span className='ml-0.5 inline-flex items-center gap-1 text-emerald-500 align-middle'>
+                                              <ShieldCheck className='h-3.5 w-3.5' />
+                                              {option.ratio ===
+                                                activeRatio && (
+                                                <span className='text-[10px] leading-none'>
+                                                  {t(GROUP_TAGS[group])}
+                                                </span>
+                                              )}
+                                            </span>
+                                          )}
                                         </span>
                                       ))}
-                                      <span className='font-mono'>
-                                        ({option.ratio}x)
-                                      </span>
                                     </span>
-                                    {optionTags.length > 0 && (
-                                      <span className='text-[10px] leading-none text-emerald-500'>
-                                        {optionTags
-                                          .map((tag) => t(tag))
-                                          .join(' · ')}
-                                      </span>
-                                    )}
-                                  </TabsTrigger>
-                                )
-                              })}
+                                  )}
+                                  <span className='font-mono'>
+                                    ({option.ratio}x)
+                                  </span>
+                                </TabsTrigger>
+                              ))}
                             </TabsList>
                           </Tabs>
                         </div>
