@@ -112,6 +112,10 @@ export const modelPricingConfig: ModelPricingConfig[] = [
     cacheHit: '>93%',
   },
   {
+    name: 'gpt-6.1-terra',
+    cacheHit: '>93%',
+  },
+  {
     name: 'gpt-6-luna',
     cacheHit: '>93%',
   },
