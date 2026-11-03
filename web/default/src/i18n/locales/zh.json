@@ -4637,6 +4637,7 @@
     "Tokenizer": "分词器",
     "tokens": "Token",
     "Tokens": "Token",
+    "Long Context": "长上下文",
     "tokens / mo": "token / 月",
     "Tokens by category": "分类 Token 占比",
     "Tokens Only": "仅限 Token",

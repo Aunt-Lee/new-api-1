@@ -79,6 +79,19 @@ function formatRatioCompact(ratio: number | undefined): string {
     : ratio.toFixed(4).replace(/\.?0+$/, '')
 }
 
+// Whether the request was actually billed at the long-context (surcharge)
+// tier. The backend writes the matched tier label into other.matched_tier
+// when billing_mode === 'tiered_expr'. A base/standard/default tier means the
+// normal rate applied; anything else (e.g. long / long_context) means the
+// long-context surcharge fired.
+function isLongContextTier(other: LogOtherData | null): boolean {
+  if (!other || other.billing_mode !== 'tiered_expr') return false
+  const label = (other.matched_tier || '').trim().toLowerCase()
+  if (!label) return false
+  if (['base', 'default', 'standard'].includes(label)) return false
+  return true
+}
+
 function getGroupRatioText(other: LogOtherData | null): string | null {
   const userGroupRatio = other?.user_group_ratio
   if (
@@ -755,6 +768,16 @@ export function useCommonLogsColumns(isAdmin: boolean): ColumnDef<UsageLog>[] {
               {promptTokens.toLocaleString()} /{' '}
               {completionTokens.toLocaleString()}
             </span>
+            {isLongContextTier(other) && (
+              <StatusBadge
+                label={t('Long Context')}
+                variant='warning'
+                size='sm'
+                showDot={false}
+                copyable={false}
+                className='w-fit'
+              />
+            )}
             {(cacheReadTokens > 0 || cacheWriteTokens > 0) && (
               <div className='flex items-center gap-1 text-[11px]'>
                 {cacheReadTokens > 0 && (
