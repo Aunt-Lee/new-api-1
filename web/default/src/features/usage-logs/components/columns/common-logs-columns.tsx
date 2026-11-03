@@ -768,16 +768,6 @@ export function useCommonLogsColumns(isAdmin: boolean): ColumnDef<UsageLog>[] {
               {promptTokens.toLocaleString()} /{' '}
               {completionTokens.toLocaleString()}
             </span>
-            {isLongContextTier(other) && (
-              <StatusBadge
-                label={t('Long Context')}
-                variant='warning'
-                size='sm'
-                showDot={false}
-                copyable={false}
-                className='w-fit'
-              />
-            )}
             {(cacheReadTokens > 0 || cacheWriteTokens > 0) && (
               <div className='flex items-center gap-1 text-[11px]'>
                 {cacheReadTokens > 0 && (
@@ -837,13 +827,23 @@ export function useCommonLogsColumns(isAdmin: boolean): ColumnDef<UsageLog>[] {
         const quotaDisplay = splitQuotaDisplay(quotaStr)
 
         return (
-          <div className='flex flex-col gap-0.5'>
+          <div className='flex flex-col items-start gap-0.5'>
             <span className='border-border/80 bg-muted/60 inline-flex h-6 w-fit items-center rounded-md border px-2 [font-family:var(--font-body)] text-sm leading-none font-semibold tabular-nums'>
               {quotaDisplay.prefix && (
                 <span className='mr-1'>{quotaDisplay.prefix}</span>
               )}
               <span>{quotaDisplay.amount}</span>
             </span>
+            {isLongContextTier(other) && (
+              <StatusBadge
+                label={t('Long Context')}
+                variant='warning'
+                size='sm'
+                showDot={false}
+                copyable={false}
+                className='w-fit shrink-0'
+              />
+            )}
           </div>
         )
       },
