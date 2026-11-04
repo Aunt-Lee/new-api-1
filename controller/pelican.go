@@ -19,9 +19,11 @@ type pelicanTestView struct {
 	CreatedAt int64  `json:"created_at"`
 }
 
-// GetPelicanTests returns the most recent probe result for each group.
+const pelicanTestsPerGroup = 4
+
+// GetPelicanTests returns recent probe results for each group (newest first).
 func GetPelicanTests(c *gin.Context) {
-	rows, err := model.GetLatestPelicanTests()
+	rows, err := model.GetLatestPelicanTests(service.PelicanProbeGroups(), pelicanTestsPerGroup)
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{
 			"success": false,

@@ -57,6 +57,14 @@ var (
 	pelicanSVGPattern      = regexp.MustCompile(`(?is)<svg\b.*</svg>`)
 )
 
+// PelicanProbeGroups returns a copy of the groups covered by the probe, so
+// the public read endpoint and the scheduler always agree on the group list.
+func PelicanProbeGroups() []string {
+	groups := make([]string, len(pelicanProbeGroups))
+	copy(groups, pelicanProbeGroups)
+	return groups
+}
+
 // StartPelicanProbeScheduler starts the random-interval probe loop. Only the
 // master node runs it, matching the other background tasks in this project.
 func StartPelicanProbeScheduler() {

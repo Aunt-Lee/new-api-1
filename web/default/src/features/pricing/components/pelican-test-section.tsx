@@ -22,10 +22,12 @@ import { Clock3, ImageOff, ShieldCheck } from 'lucide-react'
 import { useTranslation } from 'react-i18next'
 
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
+import { toIntlLocale } from '@/i18n/languages'
 
 import { getPelicanTests, type PelicanTestResult } from '../api'
 
 const PROBE_GROUPS = ['Gpt Pro', 'Gpt Plus&Team']
+const PROBE_HISTORY_SIZE = 4
 
 // Loading an SVG through <img> keeps it in an inert image context: scripts
 // inside the SVG never execute, unlike injecting it into the page DOM.
@@ -37,69 +39,107 @@ function toSvgDataUrl(svg: string): string {
   return `data:image/svg+xml;charset=utf-8,${encodeURIComponent(normalized)}`
 }
 
-function ProbeCard({
-  group,
-  result,
-  isLoading,
-}: {
-  group: string
-  result?: PelicanTestResult
-  isLoading: boolean
-}) {
-  const { t, i18n } = useTranslation()
-  const createdAt = result?.created_at ?? 0
-  const hasImage = Boolean(result?.content && result?.status === 'success')
-
-  let relative = ''
-  if (createdAt > 0) {
-    const rtf = new Intl.RelativeTimeFormat(i18n.language, { numeric: 'auto' })
+function formatRelative(createdAt: number, language: string): string {
+  if (createdAt <= 0) return ''
+  try {
+    // i18n.language uses non-standard codes such as "zhCN"; Intl requires
+    // BCP-47 tags and throws RangeError: Invalid language tag otherwise.
+    const rtf = new Intl.RelativeTimeFormat(toIntlLocale(language), {
+      numeric: 'auto',
+    })
     const minutes = Math.max(
       1,
       Math.floor((Date.now() - createdAt * 1000) / 60000)
     )
-    relative =
-      minutes < 60
-        ? rtf.format(-minutes, 'minute')
-        : minutes < 1440
-          ? rtf.format(-Math.floor(minutes / 60), 'hour')
-          : rtf.format(-Math.floor(minutes / 1440), 'day')
+    return minutes < 60
+      ? rtf.format(-minutes, 'minute')
+      : minutes < 1440
+        ? rtf.format(-Math.floor(minutes / 60), 'hour')
+        : rtf.format(-Math.floor(minutes / 1440), 'day')
+  } catch {
+    // A formatting failure must never take down the whole pricing page.
+    return dayjs(createdAt * 1000).format('MM-DD HH:mm')
   }
+}
+
+function hasValidImage(result?: PelicanTestResult): boolean {
+  return Boolean(result?.content && result?.status === 'success')
+}
+
+function ProbeCard({
+  group,
+  results,
+  isLoading,
+}: {
+  group: string
+  results: PelicanTestResult[]
+  isLoading: boolean
+}) {
+  const { t, i18n } = useTranslation()
+  const latest = results[0]
+  const createdAt = latest?.created_at ?? 0
+  const anyImage = results.some(hasValidImage)
 
   return (
     <div className='bg-card rounded-xl border p-3'>
       <div className='flex flex-wrap items-center justify-between gap-1.5'>
         <span className='text-sm font-semibold'>{group}</span>
         <span className='text-muted-foreground font-mono text-[11px]'>
-          {result?.model_name ?? 'gpt-6.1-sol'}
+          {latest?.model_name ?? 'gpt-6.1-sol'}
         </span>
       </div>
 
-      <div className='my-3 flex h-52 items-center justify-center overflow-hidden rounded-lg border bg-white p-2'>
-        {isLoading ? (
-          <div className='bg-muted h-full w-full animate-pulse rounded-md' />
-        ) : hasImage ? (
-          <img
-            src={toSvgDataUrl(result!.content!)}
-            alt={t('A pelican riding a bicycle')}
-            referrerPolicy='no-referrer'
-            className='h-full w-full object-contain'
-          />
-        ) : (
-          <div className='text-muted-foreground flex flex-col items-center gap-2 px-4 text-center text-xs'>
-            <ImageOff className='h-6 w-6 opacity-50' />
-            <span>
-              {result
-                ? t('The last test did not produce a valid image')
-                : t('No test result yet')}
-            </span>
-          </div>
-        )}
+      <div className='my-3 grid grid-cols-4 gap-1.5'>
+        {Array.from({ length: PROBE_HISTORY_SIZE }, (_, index) => {
+          const item = results[index]
+          const exactTime = item
+            ? dayjs(item.created_at * 1000).format('YYYY-MM-DD HH:mm:ss')
+            : ''
+          const svg =
+            item && item.status === 'success' && item.content
+              ? toSvgDataUrl(item.content)
+              : ''
+
+          return (
+            <div
+              key={index}
+              title={exactTime || undefined}
+              className={`flex min-w-0 flex-col gap-1 rounded-lg border p-1 ${
+                item ? '' : 'border-border/60 border-dashed'
+              }`}
+            >
+              <div className='flex aspect-square w-full items-center justify-center overflow-hidden rounded-md bg-white'>
+                {isLoading ? (
+                  <span className='bg-muted h-full w-full animate-pulse' />
+                ) : svg ? (
+                  <img
+                    src={svg}
+                    alt={t('A pelican riding a bicycle')}
+                    referrerPolicy='no-referrer'
+                    className='h-full w-full object-contain'
+                  />
+                ) : (
+                  <ImageOff className='text-muted-foreground h-4 w-4 opacity-40' />
+                )}
+              </div>
+              <span className='text-muted-foreground w-full truncate text-center font-mono text-[10px] tabular-nums'>
+                {item
+                  ? dayjs(item.created_at * 1000).format('MM-DD HH:mm')
+                  : '—'}
+              </span>
+            </div>
+          )
+        })}
       </div>
 
       <div className='text-muted-foreground flex flex-wrap items-center justify-between gap-1.5 text-[11px]'>
         <span className='inline-flex items-center gap-1'>
           <ShieldCheck className='h-3 w-3 text-emerald-500' />
-          {hasImage ? t('Raw model output, unedited') : t('Awaiting next test')}
+          {results.length === 0
+            ? t('No test result yet')
+            : anyImage
+              ? t('Raw model output, unedited')
+              : t('The last test did not produce a valid image')}
         </span>
         {createdAt > 0 && (
           <span
@@ -107,7 +147,7 @@ function ProbeCard({
             title={dayjs(createdAt * 1000).format('YYYY-MM-DD HH:mm:ss')}
           >
             <Clock3 className='h-3 w-3' />
-            {relative}
+            {formatRelative(createdAt, i18n.language)}
           </span>
         )}
       </div>
@@ -152,7 +192,7 @@ export function PelicanTestSection() {
             <ProbeCard
               key={group}
               group={group}
-              result={results.find((item) => item.group === group)}
+              results={results.filter((item) => item.group === group)}
               isLoading={query.isLoading}
             />
           ))}

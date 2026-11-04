@@ -42,7 +42,7 @@ export interface PelicanTestResult {
   created_at: number
 }
 
-// Latest "pelican riding a bicycle" probe result for each group.
+// Recent "pelican riding a bicycle" probe results for each group, newest first.
 export async function getPelicanTests(): Promise<PelicanTestResult[]> {
   const res = await api.get<{
     success: boolean

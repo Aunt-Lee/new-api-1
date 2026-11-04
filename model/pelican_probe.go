@@ -33,28 +33,27 @@ func InsertPelicanTest(record *PelicanTest) error {
 	return DB.Create(record).Error
 }
 
-// GetLatestPelicanTests returns the newest result for each group.
-// Per-group deduplication is done in application code instead of a window
-// function so the query behaves identically on SQLite, MySQL 5.7 and PostgreSQL.
-func GetLatestPelicanTests() ([]PelicanTest, error) {
-	var rows []PelicanTest
-	err := DB.Model(&PelicanTest{}).
-		Order("created_at DESC").
-		Order("id DESC").
-		Limit(500).
-		Find(&rows).Error
-	if err != nil {
-		return nil, err
+// GetLatestPelicanTests returns up to perGroup most recent results for each
+// requested group, newest first within that group. Querying per group keeps
+// the result set bounded (only the rows we actually render, including their
+// SVG payloads, are loaded) and avoids dialect-specific window functions.
+func GetLatestPelicanTests(groups []string, perGroup int) ([]PelicanTest, error) {
+	if perGroup <= 0 {
+		perGroup = 4
 	}
-
-	seen := make(map[string]struct{}, len(rows))
-	result := make([]PelicanTest, 0, len(rows))
-	for _, row := range rows {
-		if _, ok := seen[row.Group]; ok {
-			continue
+	result := make([]PelicanTest, 0, len(groups)*perGroup)
+	for _, group := range groups {
+		var rows []PelicanTest
+		err := DB.Model(&PelicanTest{}).
+			Where(commonGroupCol+" = ?", group).
+			Order("created_at DESC").
+			Order("id DESC").
+			Limit(perGroup).
+			Find(&rows).Error
+		if err != nil {
+			return nil, err
 		}
-		seen[row.Group] = struct{}{}
-		result = append(result, row)
+		result = append(result, rows...)
 	}
 	return result, nil
 }
