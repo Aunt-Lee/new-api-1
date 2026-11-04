@@ -39,6 +39,12 @@ func SetApiRouter(router *gin.Engine) {
 			perfMetricsRoute.GET("/summary", controller.GetPerfMetricsSummary)
 			perfMetricsRoute.GET("", controller.GetPerfMetrics)
 		}
+		pelicanRoute := apiRouter.Group("/pelican-test")
+		pelicanRoute.Use(middleware.HeaderNavModulePublicOrUserAuth("pricing"))
+		{
+			pelicanRoute.GET("", controller.GetPelicanTests)
+		}
+		apiRouter.POST("/pelican-test/run", middleware.AdminAuth(), controller.RunPelicanTestsNow)
 		apiRouter.GET("/rankings", middleware.HeaderNavModuleAuth("rankings"), controller.GetRankings)
 		apiRouter.GET("/verification", middleware.EmailVerificationRateLimit(), middleware.TurnstileCheck(), controller.SendEmailVerification)
 		apiRouter.GET("/reset_password", middleware.CriticalRateLimit(), middleware.TurnstileCheck(), controller.SendPasswordResetEmail)

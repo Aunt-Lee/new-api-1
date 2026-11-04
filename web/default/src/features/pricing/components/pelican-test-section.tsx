@@ -1,0 +1,163 @@
+/*
+Copyright (C) 2023-2026 QuantumNous
+
+This program is free software: you can redistribute it and/or modify
+it under the terms of the GNU Affero General Public License as
+published by the Free Software Foundation, either version 3 of the
+License, or (at your option) any later version.
+
+This program is distributed in the hope that it will be useful,
+but WITHOUT ANY WARRANTY; without even the implied warranty of
+MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
+GNU Affero General Public License for more details.
+
+You should have received a copy of the GNU Affero General Public License
+along with this program. If not, see <https://www.gnu.org/licenses/>.
+
+For commercial licensing, please contact support@quantumnous.com
+*/
+import { useQuery } from '@tanstack/react-query'
+import dayjs from 'dayjs'
+import { Clock3, ImageOff, ShieldCheck } from 'lucide-react'
+import { useTranslation } from 'react-i18next'
+
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
+
+import { getPelicanTests, type PelicanTestResult } from '../api'
+
+const PROBE_GROUPS = ['Gpt Pro', 'Gpt Plus&Team']
+
+// Loading an SVG through <img> keeps it in an inert image context: scripts
+// inside the SVG never execute, unlike injecting it into the page DOM.
+// The backend also rejects SVGs containing <script>/<foreignObject>.
+function toSvgDataUrl(svg: string): string {
+  const normalized = /<svg[^>]*\sxmlns=/i.test(svg)
+    ? svg
+    : svg.replace(/<svg/i, '<svg xmlns="http://www.w3.org/2000/svg"')
+  return `data:image/svg+xml;charset=utf-8,${encodeURIComponent(normalized)}`
+}
+
+function ProbeCard({
+  group,
+  result,
+  isLoading,
+}: {
+  group: string
+  result?: PelicanTestResult
+  isLoading: boolean
+}) {
+  const { t, i18n } = useTranslation()
+  const createdAt = result?.created_at ?? 0
+  const hasImage = Boolean(result?.content && result?.status === 'success')
+
+  let relative = ''
+  if (createdAt > 0) {
+    const rtf = new Intl.RelativeTimeFormat(i18n.language, { numeric: 'auto' })
+    const minutes = Math.max(
+      1,
+      Math.floor((Date.now() - createdAt * 1000) / 60000)
+    )
+    relative =
+      minutes < 60
+        ? rtf.format(-minutes, 'minute')
+        : minutes < 1440
+          ? rtf.format(-Math.floor(minutes / 60), 'hour')
+          : rtf.format(-Math.floor(minutes / 1440), 'day')
+  }
+
+  return (
+    <div className='bg-card rounded-xl border p-3'>
+      <div className='flex flex-wrap items-center justify-between gap-1.5'>
+        <span className='text-sm font-semibold'>{group}</span>
+        <span className='text-muted-foreground font-mono text-[11px]'>
+          {result?.model_name ?? 'gpt-6.1-sol'}
+        </span>
+      </div>
+
+      <div className='my-3 flex h-52 items-center justify-center overflow-hidden rounded-lg border bg-white p-2'>
+        {isLoading ? (
+          <div className='bg-muted h-full w-full animate-pulse rounded-md' />
+        ) : hasImage ? (
+          <img
+            src={toSvgDataUrl(result!.content!)}
+            alt={t('A pelican riding a bicycle')}
+            referrerPolicy='no-referrer'
+            className='h-full w-full object-contain'
+          />
+        ) : (
+          <div className='text-muted-foreground flex flex-col items-center gap-2 px-4 text-center text-xs'>
+            <ImageOff className='h-6 w-6 opacity-50' />
+            <span>
+              {result
+                ? t('The last test did not produce a valid image')
+                : t('No test result yet')}
+            </span>
+          </div>
+        )}
+      </div>
+
+      <div className='text-muted-foreground flex flex-wrap items-center justify-between gap-1.5 text-[11px]'>
+        <span className='inline-flex items-center gap-1'>
+          <ShieldCheck className='h-3 w-3 text-emerald-500' />
+          {hasImage ? t('Raw model output, unedited') : t('Awaiting next test')}
+        </span>
+        {createdAt > 0 && (
+          <span
+            className='inline-flex items-center gap-1 font-mono tabular-nums'
+            title={dayjs(createdAt * 1000).format('YYYY-MM-DD HH:mm:ss')}
+          >
+            <Clock3 className='h-3 w-3' />
+            {relative}
+          </span>
+        )}
+      </div>
+    </div>
+  )
+}
+
+export function PelicanTestSection() {
+  const { t } = useTranslation()
+  const query = useQuery({
+    queryKey: ['pelican-tests'],
+    queryFn: getPelicanTests,
+    staleTime: 5 * 60 * 1000,
+    refetchInterval: 5 * 60 * 1000,
+    retry: false,
+  })
+  const results = query.data ?? []
+
+  return (
+    <Card size='sm' className='mt-5'>
+      <CardHeader>
+        <div className='flex flex-wrap items-start justify-between gap-2'>
+          <div className='min-w-0'>
+            <CardTitle className='flex items-center gap-2'>
+              <ShieldCheck className='h-4 w-4 text-emerald-500' />
+              {t('Model Degradation Test')}
+            </CardTitle>
+            <p className='text-muted-foreground mt-1.5 text-xs leading-relaxed'>
+              {t(
+                'At a random time, we ask each group to draw an SVG of a pelican riding a bicycle. The untouched model output is shown here.'
+              )}
+            </p>
+          </div>
+          <span className='text-muted-foreground shrink-0 rounded-md border px-2 py-1 text-[11px]'>
+            {t('Runs automatically, at least 18 hours apart')}
+          </span>
+        </div>
+      </CardHeader>
+      <CardContent>
+        <div className='grid gap-3 sm:grid-cols-2'>
+          {PROBE_GROUPS.map((group) => (
+            <ProbeCard
+              key={group}
+              group={group}
+              result={results.find((item) => item.group === group)}
+              isLoading={query.isLoading}
+            />
+          ))}
+        </div>
+      </CardContent>
+    </Card>
+  )
+}

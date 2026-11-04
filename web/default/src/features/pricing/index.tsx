@@ -42,7 +42,11 @@ import {
 import { getLobeIcon } from '@/lib/lobe-icon'
 import { cn } from '@/lib/utils'
 
-import { ModelDetailsDrawer, PricingModelList } from './components'
+import {
+  ModelDetailsDrawer,
+  PelicanTestSection,
+  PricingModelList,
+} from './components'
 import { UptimeSparkline } from './components/model-details-uptime-sparkline'
 import { EXCLUDED_GROUPS } from './constants'
 import { usePricingData } from './hooks/use-pricing-data'
@@ -414,6 +418,8 @@ export function Pricing() {
                 </EmptyHeader>
               </Empty>
             )}
+
+            <PelicanTestSection />
           </>
         )}
 

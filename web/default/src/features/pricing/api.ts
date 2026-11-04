@@ -29,3 +29,24 @@ export async function getPricing(): Promise<PricingData> {
   const res = await api.get('/api/pricing')
   return res.data
 }
+
+// ----------------------------------------------------------------------------
+// Pelican probe APIs
+// ----------------------------------------------------------------------------
+
+export interface PelicanTestResult {
+  group: string
+  model_name: string
+  content?: string
+  status: string
+  created_at: number
+}
+
+// Latest "pelican riding a bicycle" probe result for each group.
+export async function getPelicanTests(): Promise<PelicanTestResult[]> {
+  const res = await api.get<{
+    success: boolean
+    data: PelicanTestResult[]
+  }>('/api/pelican-test')
+  return res.data?.data ?? []
+}

@@ -30,3 +30,4 @@ export {
 } from './model-details'
 export { PricingTable } from './pricing-table'
 export { PricingModelList } from './pricing-model-list'
+export { PelicanTestSection } from './pelican-test-section'

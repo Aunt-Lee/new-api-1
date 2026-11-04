@@ -148,6 +148,10 @@ func main() {
 	controller.RegisterScheduledSystemTasks()
 	service.StartSystemTaskRunner()
 
+	// Randomized (18-24h) "pelican riding a bicycle" quality probes for the
+	// model square. Master-only; results are stored and exposed publicly.
+	service.StartPelicanProbeScheduler()
+
 	if os.Getenv("BATCH_UPDATE_ENABLED") == "true" {
 		common.BatchUpdateEnabled = true
 		common.SysLog("batch update enabled with interval " + strconv.Itoa(common.BatchUpdateInterval) + "s")
