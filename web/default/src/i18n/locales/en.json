@@ -4640,7 +4640,6 @@
     "Long Context": "Long Context",
     "Model Degradation Test": "Model Degradation Test",
     "At a random time, we ask each group to draw an SVG of a pelican riding a bicycle. The untouched model output is shown here.": "At a random time, we ask each group to draw an SVG of a pelican riding a bicycle. The untouched model output is shown here.",
-    "Runs automatically, at least 18 hours apart": "Runs automatically, at least 18 hours apart",
     "A pelican riding a bicycle": "A pelican riding a bicycle",
     "No test result yet": "No test result yet",
     "The last test did not produce a valid image": "The last test did not produce a valid image",

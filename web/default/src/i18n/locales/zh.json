@@ -4640,7 +4640,6 @@
     "Long Context": "长上下文",
     "Model Degradation Test": "模型降智测试",
     "At a random time, we ask each group to draw an SVG of a pelican riding a bicycle. The untouched model output is shown here.": "系统在随机时间请求各分组绘制「鹈鹕骑自行车」SVG，这里展示未经修改的模型原始输出。",
-    "Runs automatically, at least 18 hours apart": "自动运行，两次间隔至少 18 小时",
     "A pelican riding a bicycle": "一只骑自行车的鹈鹕",
     "No test result yet": "暂无测试结果",
     "The last test did not produce a valid image": "最近一次测试未生成有效图像",

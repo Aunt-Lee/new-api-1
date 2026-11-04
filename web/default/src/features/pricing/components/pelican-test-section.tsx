@@ -169,21 +169,16 @@ export function PelicanTestSection() {
   return (
     <Card size='sm' className='mt-5'>
       <CardHeader>
-        <div className='flex flex-wrap items-start justify-between gap-2'>
-          <div className='min-w-0'>
-            <CardTitle className='flex items-center gap-2'>
-              <ShieldCheck className='h-4 w-4 text-emerald-500' />
-              {t('Model Degradation Test')}
-            </CardTitle>
-            <p className='text-muted-foreground mt-1.5 text-xs leading-relaxed'>
-              {t(
-                'At a random time, we ask each group to draw an SVG of a pelican riding a bicycle. The untouched model output is shown here.'
-              )}
-            </p>
-          </div>
-          <span className='text-muted-foreground shrink-0 rounded-md border px-2 py-1 text-[11px]'>
-            {t('Runs automatically, at least 18 hours apart')}
-          </span>
+        <div className='min-w-0'>
+          <CardTitle className='flex items-center gap-2'>
+            <ShieldCheck className='h-4 w-4 text-emerald-500' />
+            {t('Model Degradation Test')}
+          </CardTitle>
+          <p className='text-muted-foreground mt-1.5 text-xs leading-relaxed'>
+            {t(
+              'At a random time, we ask each group to draw an SVG of a pelican riding a bicycle. The untouched model output is shown here.'
+            )}
+          </p>
         </div>
       </CardHeader>
       <CardContent>
