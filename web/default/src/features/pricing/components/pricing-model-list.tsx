@@ -59,8 +59,11 @@ type PriceMetric = {
 
 const modelPricingNotes = new Map(
   modelPricingConfig
-    .filter((model) => model.pricingNote)
-    .map((model) => [model.name, model.pricingNote])
+    .filter((model) => model.pricingNote || model.pricingNoteExtra)
+    .map((model) => [
+      model.name,
+      { note: model.pricingNote, extra: model.pricingNoteExtra },
+    ])
 )
 
 export function PricingModelList(props: PricingModelListProps) {
@@ -205,7 +208,9 @@ export function PricingModelList(props: PricingModelListProps) {
                     </ItemTitle>
                     {pricingNote && (
                       <span className='text-muted-foreground text-xs'>
-                        {t(pricingNote)}
+                        {pricingNote.note ? t(pricingNote.note) : ''}
+                        {pricingNote.note && pricingNote.extra ? ' · ' : ''}
+                        {pricingNote.extra}
                       </span>
                     )}
                   </ItemContent>

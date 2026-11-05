@@ -26,6 +26,9 @@ export interface ModelPricingConfig {
   icon?: string
   cacheHit?: string
   pricingNote?: string
+  // Raw text shown next to pricingNote on the same line (e.g. a model
+  // version marker). Not translated, unlike pricingNote.
+  pricingNoteExtra?: string
   officialInputPrice?: number
   officialOutputPrice?: number
 }
@@ -188,5 +191,6 @@ export const modelPricingConfig: ModelPricingConfig[] = [
   {
     name: 'deepseek-v4.1-flash',
     pricingNote: 'Low Cache',
+    pricingNoteExtra: 'v4.1-flash-1017',
   },
 ]
