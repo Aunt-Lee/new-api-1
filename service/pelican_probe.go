@@ -33,9 +33,9 @@ const (
 		"Output ONLY the SVG markup, starting with <svg and ending with </svg>. " +
 		"No explanation, no markdown code fences."
 
-	// Automatic probes are randomized inside [18h, 24h). The lower bound is
-	// hard: two automatic runs can never be closer than 18 hours.
-	pelicanProbeMinInterval = 18 * time.Hour
+	// Automatic probes are randomized inside [12h, 18h). The lower bound is
+	// hard: two automatic runs can never be closer than 12 hours.
+	pelicanProbeMinInterval = 12 * time.Hour
 	pelicanProbeJitter      = 6 * time.Hour
 
 	pelicanProbeTick          = 15 * time.Minute
@@ -110,7 +110,7 @@ func runPelicanSchedulerTick() {
 // nextPelicanProbeTime derives the next run time deterministically from the
 // last successful run. Deriving it (instead of storing a random value) keeps
 // the target stable across restarts, so restarting the process can never be
-// used to dodge the 18-hour minimum interval.
+// used to dodge the 12-hour minimum interval.
 func nextPelicanProbeTime(lastSuccessTs int64) time.Time {
 	h := fnv.New64a()
 	var buf [8]byte

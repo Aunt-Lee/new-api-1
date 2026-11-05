@@ -18,11 +18,10 @@ For commercial licensing, please contact support@quantumnous.com
 */
 import { useQuery } from '@tanstack/react-query'
 import dayjs from 'dayjs'
-import { Clock3, ImageOff, ShieldCheck } from 'lucide-react'
+import { ImageOff, ShieldCheck } from 'lucide-react'
 import { useTranslation } from 'react-i18next'
 
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
-import { toIntlLocale } from '@/i18n/languages'
 
 import { getPelicanTests, type PelicanTestResult } from '../api'
 
@@ -39,29 +38,6 @@ function toSvgDataUrl(svg: string): string {
   return `data:image/svg+xml;charset=utf-8,${encodeURIComponent(normalized)}`
 }
 
-function formatRelative(createdAt: number, language: string): string {
-  if (createdAt <= 0) return ''
-  try {
-    // i18n.language uses non-standard codes such as "zhCN"; Intl requires
-    // BCP-47 tags and throws RangeError: Invalid language tag otherwise.
-    const rtf = new Intl.RelativeTimeFormat(toIntlLocale(language), {
-      numeric: 'auto',
-    })
-    const minutes = Math.max(
-      1,
-      Math.floor((Date.now() - createdAt * 1000) / 60000)
-    )
-    return minutes < 60
-      ? rtf.format(-minutes, 'minute')
-      : minutes < 1440
-        ? rtf.format(-Math.floor(minutes / 60), 'hour')
-        : rtf.format(-Math.floor(minutes / 1440), 'day')
-  } catch {
-    // A formatting failure must never take down the whole pricing page.
-    return dayjs(createdAt * 1000).format('MM-DD HH:mm')
-  }
-}
-
 function hasValidImage(result?: PelicanTestResult): boolean {
   return Boolean(result?.content && result?.status === 'success')
 }
@@ -75,9 +51,8 @@ function ProbeCard({
   results: PelicanTestResult[]
   isLoading: boolean
 }) {
-  const { t, i18n } = useTranslation()
+  const { t } = useTranslation()
   const latest = results[0]
-  const createdAt = latest?.created_at ?? 0
   const anyImage = results.some(hasValidImage)
 
   return (
@@ -132,7 +107,7 @@ function ProbeCard({
         })}
       </div>
 
-      <div className='text-muted-foreground flex flex-wrap items-center justify-between gap-1.5 text-[11px]'>
+      <div className='text-muted-foreground flex flex-wrap items-center gap-1.5 text-[11px]'>
         <span className='inline-flex items-center gap-1'>
           <ShieldCheck className='h-3 w-3 text-emerald-500' />
           {results.length === 0
@@ -141,15 +116,6 @@ function ProbeCard({
               ? t('Raw model output, unedited')
               : t('The last test did not produce a valid image')}
         </span>
-        {createdAt > 0 && (
-          <span
-            className='inline-flex items-center gap-1 font-mono tabular-nums'
-            title={dayjs(createdAt * 1000).format('YYYY-MM-DD HH:mm:ss')}
-          >
-            <Clock3 className='h-3 w-3' />
-            {formatRelative(createdAt, i18n.language)}
-          </span>
-        )}
       </div>
     </div>
   )
