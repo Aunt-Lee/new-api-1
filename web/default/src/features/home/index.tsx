@@ -123,7 +123,7 @@ const COLLAPSED_MODEL_ORDER = [
   'gpt-6-astra',
   'grok-4.7',
   'grok-4.6',
-  'deepseek-v4.1-flash',
+  'deepseek-v4.1-flash-1017',
 ] as const
 
 const EXPANDED_GPT_ORDER = [
@@ -417,7 +417,11 @@ export function Home() {
 
     return modelPricingConfig
       .map((configItem) => {
-        const model = modelMap.get(configItem.name)
+        const model =
+          modelMap.get(configItem.name) ??
+          configItem.aliases
+            ?.map((alias) => modelMap.get(alias))
+            .find((candidate) => candidate !== undefined)
         if (!model) {
           if (
             !hasNumber(configItem.officialInputPrice) ||

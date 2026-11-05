@@ -23,6 +23,9 @@ For commercial licensing, please contact support@quantumnous.com
 
 export interface ModelPricingConfig {
   name: string
+  // Unversioned model ids that /api/pricing may still report. Used only as a
+  // lookup fallback so changing a display name never drops the price row.
+  aliases?: string[]
   icon?: string
   cacheHit?: string
   pricingNote?: string
@@ -186,11 +189,11 @@ export const modelPricingConfig: ModelPricingConfig[] = [
     name: 'grok-4.3',
   },
   {
-    name: 'deepseek-v4-pro',
+    name: 'deepseek-v4-pro-0813',
+    aliases: ['deepseek-v4-pro'],
   },
   {
-    name: 'deepseek-v4.1-flash',
-    pricingNote: 'Low Cache',
-    pricingNoteExtra: 'v4.1-flash-1017',
+    name: 'deepseek-v4.1-flash-1017',
+    aliases: ['deepseek-v4.1-flash'],
   },
 ]
