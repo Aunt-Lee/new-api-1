@@ -26,7 +26,7 @@ import { toIntlLocale } from '@/i18n/languages'
 
 import { getPelicanTests, type PelicanTestResult } from '../api'
 
-const PROBE_GROUPS = ['Gpt Pro', 'Gpt Plus&Team']
+const PROBE_GROUPS = ['Gpt Plus&Team', 'Gpt Pro']
 const PROBE_HISTORY_SIZE = 4
 
 // Loading an SVG through <img> keeps it in an inert image context: scripts
