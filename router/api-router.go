@@ -384,5 +384,36 @@ func SetApiRouter(router *gin.Engine) {
 			deploymentsRoute.POST("/:id/extend", controller.ExtendDeployment)
 			deploymentsRoute.DELETE("/:id", controller.DeleteDeployment)
 		}
+
+		// Ticket system (contract v3.1 §7.1). The first path level is entirely
+		// static and the :id wildcard is pushed down under /item/, so
+		// /ticket/admin can never be captured by :id. User-level rate limiters
+		// are mounted AFTER auth (userRateLimitFactory needs c.GetInt("id")).
+		ticketRoute := apiRouter.Group("/ticket")
+		ticketRoute.Use(middleware.UserAuth())
+		{
+			ticketRoute.POST("/", middleware.CriticalRateLimit(), middleware.TicketWriteRateLimit(), controller.CreateTicket)
+			ticketRoute.GET("/", controller.GetTicketList)
+			// Trailing-slash-free alias (§14.1 #5); pairs with the frontend's
+			// consistent trailing slash to avoid Gin RedirectTrailingSlash 301.
+			ticketRoute.GET("", controller.GetTicketList)
+			ticketRoute.GET("/unread-count", controller.GetTicketUnreadCount)
+			ticketRoute.GET("/item/:id", controller.GetTicketDetail)
+			ticketRoute.POST("/item/:id/reply", middleware.CriticalRateLimit(), middleware.TicketWriteRateLimit(), controller.ReplyTicket)
+			ticketRoute.PUT("/item/:id/status", middleware.TicketWriteRateLimit(), controller.UpdateTicketStatus)
+			ticketRoute.POST("/item/:id/read", controller.MarkTicketRead)
+		}
+
+		ticketAdminRoute := apiRouter.Group("/ticket/admin")
+		ticketAdminRoute.Use(middleware.AdminAuth())
+		{
+			ticketAdminRoute.GET("/", middleware.SearchRateLimit(), controller.GetAdminTicketList)
+			ticketAdminRoute.GET("", middleware.SearchRateLimit(), controller.GetAdminTicketList)
+			ticketAdminRoute.GET("/unread-count", controller.GetAdminTicketUnreadCount)
+			ticketAdminRoute.GET("/item/:id", controller.GetAdminTicketDetail)
+			ticketAdminRoute.POST("/item/:id/reply", middleware.CriticalRateLimit(), middleware.TicketWriteRateLimit(), controller.AdminReplyTicket)
+			ticketAdminRoute.PUT("/item/:id/status", middleware.TicketWriteRateLimit(), controller.AdminUpdateTicketStatus)
+			ticketAdminRoute.POST("/item/:id/read", controller.AdminMarkTicketRead)
+		}
 	}
 }

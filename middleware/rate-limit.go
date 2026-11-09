@@ -203,3 +203,20 @@ func SearchRateLimit() func(c *gin.Context) {
 	}
 	return userRateLimitFactory(common.SearchRateLimitNum, common.SearchRateLimitDuration, "SR")
 }
+
+// Ticket write rate limit (contract v3.1 §14.1 #1): 5 requests / 60s per
+// authenticated user, sliding log, mark "TW". Deliberately NOT configurable via
+// environment variables and NOT added to common/constants.go — changing the
+// value requires editing the constants and rebuilding the image.
+// 60s is well below RateLimitKeyExpirationDuration (20min), so the Redis key
+// cannot expire before the window ends.
+// Must be mounted AFTER UserAuth()/AdminAuth(): userRateLimitFactory rejects
+// c.GetInt("id") == 0 with 401.
+const (
+	ticketWriteRateLimitNum      = 5
+	ticketWriteRateLimitDuration = int64(60)
+)
+
+func TicketWriteRateLimit() func(c *gin.Context) {
+	return userRateLimitFactory(ticketWriteRateLimitNum, ticketWriteRateLimitDuration, "TW")
+}

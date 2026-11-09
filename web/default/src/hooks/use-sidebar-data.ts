@@ -24,6 +24,7 @@ import {
   FlaskConical,
   Key,
   LayoutDashboard,
+  LifeBuoy,
   ListTodo,
   MessageSquare,
   Radio,
@@ -37,7 +38,9 @@ import {
 import { useTranslation } from 'react-i18next'
 
 import type { SidebarData } from '@/components/layout/types'
+import { useTicketUnread } from '@/features/tickets/hooks'
 import { ROLE } from '@/lib/roles'
+import { useAuthStore } from '@/stores/auth-store'
 
 /**
  * Root navigation groups for the application sidebar.
@@ -47,6 +50,14 @@ import { ROLE } from '@/lib/roles'
  */
 export function useSidebarData(): SidebarData {
   const { t } = useTranslation()
+  const role = useAuthStore((state) => state.auth.user?.role ?? ROLE.GUEST)
+
+  // One shared polling query per scope (sidebar, command menu and pages all
+  // reuse the same query key). Failures keep the last successful badge.
+  const selfUnread = useTicketUnread('self')
+  const adminUnread = useTicketUnread('global', role >= ROLE.ADMIN)
+  const selfBadge = selfUnread > 0 ? String(selfUnread) : undefined
+  const adminBadge = adminUnread > 0 ? String(adminUnread) : undefined
 
   return {
     navGroups: [
@@ -113,6 +124,12 @@ export function useSidebarData(): SidebarData {
             url: '/profile',
             icon: User,
           },
+          {
+            title: t('My Tickets'),
+            url: '/tickets',
+            icon: LifeBuoy,
+            badge: selfBadge,
+          },
         ],
       },
       {
@@ -138,6 +155,13 @@ export function useSidebarData(): SidebarData {
             title: t('Redemption Codes'),
             url: '/redemption-codes',
             icon: Ticket,
+          },
+          {
+            title: t('Ticket Management'),
+            url: '/ticket-management',
+            icon: LifeBuoy,
+            badge: adminBadge,
+            requiredRole: ROLE.ADMIN,
           },
           {
             title: t('Subscriptions'),

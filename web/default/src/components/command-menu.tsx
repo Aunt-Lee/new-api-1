@@ -34,9 +34,24 @@ import {
 import { useSearch } from '@/context/search-provider'
 import { useTheme } from '@/context/theme-provider'
 import { useSidebarData } from '@/hooks/use-sidebar-data'
+import { ROLE } from '@/lib/roles'
+import { useAuthStore } from '@/stores/auth-store'
 
 import { getNavGroupsForPath } from './layout/lib/sidebar-view-registry'
 import { ScrollArea } from './ui/scroll-area'
+
+/**
+ * F5 (§1.3) / §14.1 #13: `CommandMenu` uses `useSidebarData()` directly and
+ * therefore bypasses the role filtering in `useSidebarView()`. Gate ONLY the
+ * two newly added ticket entries here, so a regular user cannot search for
+ * `/ticket-management`. Existing Admin entries are deliberately left as-is:
+ * fixing that pre-existing leak is out of scope for this change.
+ */
+function canShowTicketCommand(url: string, role: number): boolean {
+  if (url === '/tickets') return role >= ROLE.USER
+  if (url === '/ticket-management') return role >= ROLE.ADMIN
+  return true
+}
 
 export function CommandMenu() {
   const { t } = useTranslation()
@@ -45,6 +60,7 @@ export function CommandMenu() {
   const { open, setOpen } = useSearch()
   const { pathname } = useLocation()
   const sidebarData = useSidebarData()
+  const role = useAuthStore((state) => state.auth.user?.role ?? ROLE.GUEST)
 
   // Use the active nested sidebar view's nav groups when one matches
   // the current URL; otherwise fall back to the root navigation.
@@ -68,6 +84,13 @@ export function CommandMenu() {
             {navGroups.map((group) => (
               <CommandGroup key={group.id || group.title} heading={group.title}>
                 {group.items.map((navItem, i) => {
+                  if (
+                    navItem.url &&
+                    !canShowTicketCommand(String(navItem.url), role)
+                  ) {
+                    return null
+                  }
+
                   if (navItem.url)
                     return (
                       <CommandItem
