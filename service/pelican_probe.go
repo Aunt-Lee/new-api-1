@@ -21,17 +21,24 @@ import (
 	"gorm.io/gorm"
 )
 
-// The pelican probe asks each target group to draw "a pelican riding a
-// bicycle" as a single SVG, then publishes the untouched result as visible
-// evidence that the group is really serving the expected model quality.
+// The model-degradation probe asks each target group to draw an ANIMATED SVG
+// of a little crocodile riding a bicycle, then publishes the untouched result
+// as visible evidence that the group is really serving the expected model
+// quality. The internal "pelican" identifiers are deliberately kept for the
+// existing table / endpoint / symbol names; only the subject changed
+// (2026-11-09).
 const (
 	pelicanProbeModel  = "gpt-6.1-sol"
-	pelicanProbePrompt = "Create a single SVG illustration of a pelican riding a bicycle. " +
-		"The image must clearly show a pelican (long beak, wings, body), a bicycle with two round wheels and a frame, " +
-		"and the pelican sitting on the saddle pedaling the bicycle. " +
-		"Use basic SVG shapes such as circle, ellipse, path, line, polygon and rect, and include a viewBox. " +
-		"Output ONLY the SVG markup, starting with <svg and ending with </svg>. " +
-		"No explanation, no markdown code fences."
+	pelicanProbePrompt = "Create a single ANIMATED SVG of a cute little crocodile riding a bicycle. " +
+		"The scene must clearly show: a small green crocodile with a long snout, visible eyes, " +
+		"a row of triangular back scutes and a swinging tail, sitting on the saddle and pedaling " +
+		"with its little legs, and a bicycle with two round wheels, spokes and a frame. " +
+		"It MUST be a looping animation, NOT a still image. Use SMIL elements <animate> and <animateTransform> " +
+		"with repeatCount=\"indefinite\": rotate both wheels (with visible spokes), bob or move the bicycle " +
+		"slightly, pedal the crocodile's legs back and forth, and swing its tail. " +
+		"Use basic SVG shapes such as circle, ellipse, path, line, polygon, rect and text, and include a viewBox. " +
+		"Self-contained only: no scripts, no external links or images, no <foreignObject>, no markdown fences. " +
+		"Output ONLY the SVG markup, starting with <svg and ending with </svg>. No explanation."
 
 	// Automatic probes are randomized inside [12h, 18h). The lower bound is
 	// hard: two automatic runs can never be closer than 12 hours.
@@ -280,6 +287,13 @@ func extractPelicanSVG(raw string) (string, error) {
 	lower := strings.ToLower(svg)
 	if strings.Contains(lower, "<script") || strings.Contains(lower, "<foreignobject") {
 		return "", errors.New("svg contains unsafe elements")
+	}
+	// The probe subject is explicitly a looping animation. A still SVG means
+	// the model ignored the instruction; publishing it as "success" would hide
+	// a real quality regression. "<animate" also covers <animateTransform>
+	// and <animateMotion>, the SMIL elements the prompt asks for.
+	if !strings.Contains(lower, "<animate") {
+		return "", errors.New("svg is not animated")
 	}
 	return svg, nil
 }

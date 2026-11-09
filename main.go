@@ -148,8 +148,9 @@ func main() {
 	controller.RegisterScheduledSystemTasks()
 	service.StartSystemTaskRunner()
 
-	// Randomized (18-24h) "pelican riding a bicycle" quality probes for the
-	// model square. Master-only; results are stored and exposed publicly.
+	// Randomized (12-18h) animated "little crocodile riding a bicycle" SVG
+	// quality probes for the model square. Master-only; the untouched model
+	// output is stored and exposed publicly.
 	service.StartPelicanProbeScheduler()
 
 	if os.Getenv("BATCH_UPDATE_ENABLED") == "true" {

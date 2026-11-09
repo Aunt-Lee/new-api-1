@@ -7,8 +7,11 @@ const (
 	PelicanTestStatusInvalid = "invalid"
 )
 
-// PelicanTest stores one "pelican riding a bicycle" probe result for a group.
-// The raw SVG is kept so the public page can show the untouched model output.
+// PelicanTest stores one animated "little crocodile riding a bicycle" SVG
+// probe result for a group. The raw SVG is kept so the public page can show
+// the untouched model output. The historical "pelican" name is deliberately
+// kept for the existing table / endpoint / symbol names; only the subject
+// changed (2026-11-09).
 type PelicanTest struct {
 	Id         int    `json:"id" gorm:"primaryKey"`
 	Group      string `json:"group" gorm:"column:group;size:64;index:idx_pelican_group_created,priority:1"`
@@ -60,7 +63,7 @@ func GetLatestPelicanTests(groups []string, perGroup int) ([]PelicanTest, error)
 
 // GetLatestSuccessfulPelicanTestTime returns the timestamp of the most recent
 // *successful* probe run across all groups. Failed runs are deliberately
-// excluded: a failed run must not push the next attempt 18 hours away.
+// excluded: a failed run must not push the next attempt 12 hours away.
 func GetLatestSuccessfulPelicanTestTime() (int64, error) {
 	var latest int64
 	err := DB.Model(&PelicanTest{}).

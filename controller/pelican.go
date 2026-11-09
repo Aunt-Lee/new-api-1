@@ -58,7 +58,7 @@ func RunPelicanTestsNow(c *gin.Context) {
 	if results == nil {
 		c.JSON(http.StatusConflict, gin.H{
 			"success": false,
-			"message": "a pelican probe is already running",
+			"message": "a model degradation probe is already running",
 		})
 		return
 	}

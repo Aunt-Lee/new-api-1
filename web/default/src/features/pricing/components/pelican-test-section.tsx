@@ -30,7 +30,11 @@ const PROBE_HISTORY_SIZE = 4
 
 // Loading an SVG through <img> keeps it in an inert image context: scripts
 // inside the SVG never execute, unlike injecting it into the page DOM.
-// The backend also rejects SVGs containing <script>/<foreignObject>.
+// Declarative SMIL animations (<animate> / <animateTransform>) DO still play
+// in this context (verified in Chrome 156 with three distinct frames), which
+// is what the little-crocodile-riding-a-bicycle probe relies on.
+// The backend also rejects SVGs containing <script>/<foreignObject> and SVGs
+// without any SMIL animation element.
 function toSvgDataUrl(svg: string): string {
   const normalized = /<svg[^>]*\sxmlns=/i.test(svg)
     ? svg
@@ -89,7 +93,7 @@ function ProbeCard({
                 ) : svg ? (
                   <img
                     src={svg}
-                    alt={t('A pelican riding a bicycle')}
+                    alt={t('A little crocodile riding a bicycle')}
                     referrerPolicy='no-referrer'
                     className='h-full w-full object-contain'
                   />
@@ -142,7 +146,7 @@ export function PelicanTestSection() {
           </CardTitle>
           <p className='text-muted-foreground mt-1.5 text-xs leading-relaxed'>
             {t(
-              'At a random time, we ask each group to draw an SVG of a pelican riding a bicycle. The untouched model output is shown here.'
+              'At a random time, we ask each group to draw an animated SVG of a little crocodile riding a bicycle. The untouched model output is shown here.'
             )}
           </p>
         </div>

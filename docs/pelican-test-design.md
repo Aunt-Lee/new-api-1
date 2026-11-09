@@ -1,8 +1,9 @@
-# 模型广场「鹈鹕测试」功能设计文档
+# 模型广场「模型降智测试」功能设计文档
 
 > 状态：已实现（2026-11-04）· 原始设计：WorkBuddy · 日期：2026-11-02
 > 关联页面：模型定价页（Model Square，`web/default/src/features/pricing/`）
 > 注意：本文件保留的是**初始设计方案**；最终落地与本文的差异见 §10，以 §10 为准。
+> **2026-11-09 变更（当日定稿）**：测试题目最终改为「**小鳄鱼骑自行车的 SVG 循环动画**」，详见 §11。演变过程：鹈鹕骑车静态图 → 牛顿骑车 + 苹果砸头动画 → 用户当日改为小鳄鱼骑车动画；牛顿方案未提交即作废。§1–§9 中的鹈鹕描述为历史设计，不再代表当前题目。
 
 ## 1. 背景与目标
 
@@ -205,3 +206,32 @@ Body: { "model": "gpt-6.1-sol",
 - 历史数据保留 30 天；`GET /api/pelican-test` 带 `Cache-Control: public, max-age=300`，且只回公开的分组/模型/状态/时间/SVG，不回内部 `fail_reason`。
 - 管理员手动触发会写入新的成功记录，从而重置下一次自动运行时间（绕过「两次至少 12h」的是人工操作，不是自动调度）。
 - 2026-11-05 调整：卡片底部不再显示「x 小时前」这类相对时间，仅保留每张结果图下方的 `MM-DD HH:mm` 绝对时间与悬停精确时间；调度窗口同步收窄为 12–18h。
+
+## 11. 当前测试题目：小鳄鱼骑车动画（2026-11-09 定稿）
+
+**变更经过**：原始题目「鹈鹕骑自行车（静态 SVG）」→ 同日改为「牛顿骑车 + 苹果砸头动画」→ 用户当日再次改为「**小鳄鱼骑自行车的循环动画**」。牛顿方案未提交即作废，本节是**当前唯一有效题目**；§1–§9 的鹈鹕描述仅为历史设计。改题目的动机不变：静态构图题只能检验一次成图，带时间维度的动画能更明显地暴露模型能力退化。
+
+| 项目 | 最终内容 |
+|---|---|
+| 题目 | 一只可爱的绿色小鳄鱼骑着自行车的**循环动画**（无牛顿、无苹果砸头） |
+| Prompt 关键要求 | 长吻、可见眼睛、背脊三角鳞甲、会摆动的尾巴、蹬踏的小腿；自行车两个圆轮 + 辐条 + 车架。必须用 SMIL `<animate>` / `<animateTransform>` 且 `repeatCount="indefinite"`：车轮旋转（辐条可见）、车身轻微起伏/平移、双腿交替蹬踏、尾巴来回摆动；自包含、无脚本/外链/`<foreignObject>`、只输出 SVG |
+| 页面说明文案 | EN key：`At a random time, we ask each group to draw an animated SVG of a little crocodile riding a bicycle. The untouched model output is shown here.` / 中文：「系统在随机时间请求各分组绘制「小鳄鱼骑自行车」的 SVG 动画，这里展示未经修改的模型原始输出。」 |
+| 图片 alt | `A little crocodile riding a bicycle` / 「小鳄鱼骑自行车」 |
+| 后端注释 | `main.go`、`model/pelican_probe.go`、`service/pelican_probe.go`、`features/pricing/api.ts` 均已同步，不再出现牛顿 / 苹果描述 |
+
+**动画渲染可行性（已实测）**：前端仍用 `<img src="data:image/svg+xml,...">` 惰性图片上下文。用真实 Chrome 156 加载含 `<animateTransform>` / `<animate>` 的示例 SVG，间隔 600ms 连截三帧，三帧字节互不相同 → 声明式 SMIL 动画在 `<img>` 中正常播放，无需改为 iframe / inline SVG，也不牺牲「脚本不执行」的安全边界。因此**不改渲染方式**，只在前端注释与 Prompt 中固化这一约束。
+
+**动画门禁（同日补充）**：仅靠 Prompt 并不足以保证「动画」落地——原 `extractPelicanSVG()` 只校验 `<svg>` 存在、大小 ≤ 200KB、无 `<script>` / `<foreignObject>`，模型若返回静态 SVG 仍会被记为 `success` 并公开展示，等于把「没遵循指令」伪装成通过。故在安全过滤之后追加一条校验：SVG 必须包含 `<animate` 前缀（覆盖 `<animate>` / `<animateTransform>` / `<animateMotion>`），否则记为 `invalid` 并写入 `fail_reason = "svg is not animated"`。静态图会如实暴露为一次失败探测，而非被当作「未降智」证据。此校验只作用于新结果，不改写历史行，与具体题目无关。回归测试见 `service/pelican_probe_animation_test.go`（7 个子用例：SMIL 两种标签与大小写混写放行；静态图 / script / foreignObject / 无 svg 拒绝）。
+
+**保持不动的部分**：内部标识符（`pelicanProbe*` 符号、`pelican_tests` 表、`/api/pelican-test` 路由、组件文件名、系统令牌前缀）全部保留，避免为了改题目引入数据库迁移与路由断裂；用户可见文案已不含「鹈鹕 / 牛顿 / 苹果」。调度窗口 12–18h、每组历史 4 次、保留 30 天、不做打分均不变。
+
+**历史数据**：`pelican_tests` 中已有的旧题目结果不会被改写，会随 30 天保留期或后续探测（每组保留最近 4 次）自然淘汰。如需立即替换，可在发布后用 `POST /api/pelican-test/run`（AdminAuth）手动触发一次；是否清空历史数据需单独确认，本次未做。
+
+**验收（真实浏览器，2026-11-09）**：在隔离 Docker 实例（`http://127.0.0.1:3018`，theme=default）注入 8 条小鳄鱼动画 fixture 到 `pelican_tests`，用本机 Chrome 156 打开 `/pricing`，`.local-test/croc_pricing_probe.mjs` 得 **15 PASS / 0 FAIL**，浏览器 console / pageerror / requestfailed 全为 NONE：
+
+- 英文原文与中文翻译两套说明文案、两套 alt 均正确，页面不再出现「鹈鹕 / 牛顿 / 苹果」字样；
+- 两个分组各渲染 4 张图（共 8 张），全部走 `data:image/svg+xml` 惰性图片且含 SMIL `<animate>`、不含脚本；
+- 对定价页内真实 `<img>` 连截三帧（间隔 650ms），像素字节互不相同；另外连录 18 帧合成 `.local-test/croc-live.gif`，18 帧哈希全不相同 → **动画在真实页面里确实播放**；
+- 中文验收需预置 `localStorage.i18nextLng = 'zhCN'`：`i18n/config.ts` 的 `detection.order` 只有 `localStorage`，浏览器 `Accept-Language` 不生效。
+
+截图：`.local-test/croc-shots/01-pricing-en.png`、`02-pricing-zh.png`、`frame-a/b/c.png`；实时预览 `.local-test/croc-live.html`。注意隔离库未配置任何模型/渠道，页面显示「本站当前已启用模型，总计 0 个」属预期；**真实模型能否按 prompt 稳定产出合规动画 SVG，仍需在有上游渠道的环境等 12–18h 调度窗口或管理员手动触发 `POST /api/pelican-test/run` 验证**，本次未覆盖。
