@@ -38,6 +38,7 @@ import { StaticDataTable } from '@/components/data-table'
 import { sideDrawerContentClassName } from '@/components/drawer-layout'
 import { GroupBadge } from '@/components/group-badge'
 import { PublicLayout } from '@/components/layout'
+import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import {
   Sheet,
@@ -48,6 +49,7 @@ import {
 } from '@/components/ui/sheet'
 import { Skeleton } from '@/components/ui/skeleton'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
+import { isNewModel } from '@/features/home/model-pricing-config'
 import { getPerfMetrics } from '@/features/performance-metrics/api'
 import {
   formatLatency,
@@ -543,6 +545,14 @@ function ModelHeader(props: { model: PricingModel }) {
         <h1 className='font-mono text-xl font-bold tracking-tight sm:text-2xl'>
           {model.model_name}
         </h1>
+        {isNewModel(model.model_name) && (
+          <Badge
+            variant='outline'
+            className='h-5 shrink-0 border-emerald-500/40 bg-emerald-500/10 px-2 text-[11px] font-semibold text-emerald-600 dark:text-emerald-400'
+          >
+            {t('NEW')}
+          </Badge>
+        )}
         <CopyButton
           value={model.model_name || ''}
           className='size-6'

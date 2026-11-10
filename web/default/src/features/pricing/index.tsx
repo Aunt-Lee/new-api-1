@@ -33,7 +33,10 @@ import {
 import { Separator } from '@/components/ui/separator'
 import { Skeleton } from '@/components/ui/skeleton'
 import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs'
-import { modelPricingConfig } from '@/features/home/model-pricing-config'
+import {
+  isNewModel,
+  modelPricingConfig,
+} from '@/features/home/model-pricing-config'
 import { getPerfMetrics } from '@/features/performance-metrics/api'
 import {
   formatUptimePct,
@@ -161,11 +164,16 @@ export function Pricing() {
       models
         .filter((model) => String(model.vendor_id) === activeVendor)
         .sort((left, right) => {
+          // Keep newly launched models at the top regardless of the config
+          // array order, active vendor or selected group ratio.
+          const leftNew = isNewModel(left.model_name) ? 0 : 1
+          const rightNew = isNewModel(right.model_name) ? 0 : 1
           const leftOrder =
             modelOrder.get(left.model_name) ?? Number.MAX_SAFE_INTEGER
           const rightOrder =
             modelOrder.get(right.model_name) ?? Number.MAX_SAFE_INTEGER
           return (
+            leftNew - rightNew ||
             leftOrder - rightOrder ||
             left.model_name.localeCompare(right.model_name)
           )
@@ -222,11 +230,16 @@ export function Pricing() {
           )
         )
         .sort((left, right) => {
+          // Keep newly launched models at the top regardless of the config
+          // array order, active vendor or selected group ratio.
+          const leftNew = isNewModel(left.model_name) ? 0 : 1
+          const rightNew = isNewModel(right.model_name) ? 0 : 1
           const leftOrder =
             modelOrder.get(left.model_name) ?? Number.MAX_SAFE_INTEGER
           const rightOrder =
             modelOrder.get(right.model_name) ?? Number.MAX_SAFE_INTEGER
           return (
+            leftNew - rightNew ||
             leftOrder - rightOrder ||
             left.model_name.localeCompare(right.model_name)
           )

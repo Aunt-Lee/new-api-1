@@ -30,7 +30,10 @@ import {
   ItemTitle,
 } from '@/components/ui/item'
 import { Separator } from '@/components/ui/separator'
-import { modelPricingConfig } from '@/features/home/model-pricing-config'
+import {
+  isNewModel,
+  modelPricingConfig,
+} from '@/features/home/model-pricing-config'
 import { useCopyToClipboard } from '@/hooks/use-copy-to-clipboard'
 import { cn } from '@/lib/utils'
 
@@ -195,6 +198,14 @@ export function PricingModelList(props: PricingModelListProps) {
                       >
                         {model.model_name}
                       </button>
+                      {isNewModel(model.model_name) && (
+                        <Badge
+                          variant='outline'
+                          className='h-4 shrink-0 border-emerald-500/40 bg-emerald-500/10 px-1.5 text-[10px] leading-none font-semibold text-emerald-600 dark:text-emerald-400'
+                        >
+                          {t('NEW')}
+                        </Badge>
+                      )}
                       <Button
                         type='button'
                         variant='ghost'

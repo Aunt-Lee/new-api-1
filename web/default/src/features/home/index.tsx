@@ -80,6 +80,9 @@ interface ModelPricingRow {
   officialInput: string
   officialOutput: string
   discount: string
+  // Required (not optional): the type predicate on the filter below relies on
+  // the inferred row shape matching ModelPricingRow exactly.
+  isNew: boolean
 }
 
 interface ModelPricingGroup {
@@ -113,6 +116,7 @@ interface HomeFAQItem {
 }
 
 const COLLAPSED_MODEL_ORDER = [
+  'claude-fable-5-2',
   'claude-fable-5-1',
   'claude-fable-5',
   'claude-opus-5-5',
@@ -444,6 +448,7 @@ export function Home() {
               i18n.resolvedLanguage
             ),
             discount: '-',
+            isNew: Boolean(configItem.isNew),
           }
         }
 
@@ -492,6 +497,7 @@ export function Home() {
             i18n.resolvedLanguage
           ),
           discount: formatDiscountPercent(minimumDiscount),
+          isNew: Boolean(configItem.isNew),
         }
       })
       .filter((item): item is ModelPricingRow => item !== null)
@@ -808,6 +814,14 @@ export function Home() {
                                     <span className='truncate'>
                                       {item.name}
                                     </span>
+                                    {item.isNew && (
+                                      <Badge
+                                        variant='outline'
+                                        className='h-4 shrink-0 border-emerald-500/40 bg-emerald-500/10 px-1.5 text-[10px] leading-none font-semibold text-emerald-600 dark:text-emerald-400'
+                                      >
+                                        {t('NEW')}
+                                      </Badge>
+                                    )}
                                   </span>
                                   <span className='bg-muted/35 flex flex-col gap-1 rounded-xl p-2 text-left md:hidden'>
                                     <span className='text-muted-foreground text-xs'>

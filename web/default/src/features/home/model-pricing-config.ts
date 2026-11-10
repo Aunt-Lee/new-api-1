@@ -34,6 +34,10 @@ export interface ModelPricingConfig {
   pricingNoteExtra?: string
   officialInputPrice?: number
   officialOutputPrice?: number
+  // Freshly launched model. This single flag drives both the "New" badge and
+  // the top-of-list placement on the home page and the model pricing page, so
+  // the two pages can never disagree about which model is new.
+  isNew?: boolean
 }
 
 /**
@@ -61,6 +65,7 @@ export const pricingHeaderConfig = {
 }
 
 export const featuredModelNames = [
+  'claude-fable-5-2',
   'claude-fable-5',
   'claude-opus-5-5',
   'claude-opus-5',
@@ -82,6 +87,18 @@ export const featuredModelNames = [
  * 价格从后台 /api/pricing 的模型倍率配置读取，不在前端写死。
  */
 export const modelPricingConfig: ModelPricingConfig[] = [
+  // Keep newly launched models at index 0: the home page renders Claude rows in
+  // config order and the pricing page builds its modelOrder map from this array.
+  // The pricing page additionally pins isNew models in its sort comparators, so
+  // the first entry stays at the top of both pages.
+  {
+    name: 'claude-fable-5-2',
+    icon: 'Anthropic',
+    cacheHit: '>93%',
+    officialInputPrice: 8,
+    officialOutputPrice: 40,
+    isNew: true,
+  },
   {
     name: 'claude-fable-5-1',
     icon: 'Anthropic',
@@ -197,3 +214,17 @@ export const modelPricingConfig: ModelPricingConfig[] = [
     aliases: ['deepseek-v4.1-flash'],
   },
 ]
+
+/**
+ * Model ids carrying the "New" badge. Derived from modelPricingConfig so the
+ * badge cannot drift away from the pinned-to-top model list.
+ */
+export const NEW_MODEL_NAMES: ReadonlySet<string> = new Set(
+  modelPricingConfig
+    .filter((model) => model.isNew)
+    .map((model) => model.name)
+)
+
+export function isNewModel(modelName: string): boolean {
+  return NEW_MODEL_NAMES.has(modelName)
+}
