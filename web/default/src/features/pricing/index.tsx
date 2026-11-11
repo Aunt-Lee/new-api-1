@@ -57,6 +57,7 @@ import type { UptimeDayPoint } from './lib/mock-stats'
 import { getModelUsableGroupRatios } from './lib/model-helpers'
 
 const GROUP_PERFORMANCE_MODELS = {
+  'Claude Cursor': 'claude-sonnet-5-5',
   'Claude Kiro': 'claude-sonnet-5',
   'Claude Max': 'claude-sonnet-5',
   'Gpt Pro': 'gpt-6.1-sol',
