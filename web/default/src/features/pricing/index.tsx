@@ -63,7 +63,9 @@ const GROUP_PERFORMANCE_MODELS = {
   'Gpt Plus&Team': 'gpt-6.1-sol',
   Luna: 'gpt-5.6-luna',
   'Grok Heavy': 'grok-4.5',
-  DeepSeek: 'deepseek-v4.1-flash',
+  'Grok Ultra': 'grok-4.7',
+  'DeepSeek-Pro': 'deepseek-v4-pro-0813',
+  'DeepSeek-Flash': 'deepseek-v4.1-flash-1017',
 } as const
 
 // Vendor tags keyed by lowercased vendor name.
