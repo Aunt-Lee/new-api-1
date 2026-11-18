@@ -116,6 +116,8 @@ interface HomeFAQItem {
 }
 
 const COLLAPSED_MODEL_ORDER = [
+  'gpt-6.2-astra',
+  'gpt-6.2-sol',
   'claude-fable-5-2',
   'claude-fable-5-1',
   'claude-fable-5',
@@ -131,6 +133,8 @@ const COLLAPSED_MODEL_ORDER = [
 ] as const
 
 const EXPANDED_GPT_ORDER = [
+  'gpt-6.2-astra',
+  'gpt-6.2-sol',
   'gpt-6.1-sol',
   'gpt-6.1-terra',
   'gpt-6-luna',

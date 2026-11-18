@@ -65,6 +65,8 @@ export const pricingHeaderConfig = {
 }
 
 export const featuredModelNames = [
+  'gpt-6.2-astra',
+  'gpt-6.2-sol',
   'claude-fable-5-2',
   'claude-fable-5',
   'claude-opus-5-5',
@@ -87,10 +89,21 @@ export const featuredModelNames = [
  * 价格从后台 /api/pricing 的模型倍率配置读取，不在前端写死。
  */
 export const modelPricingConfig: ModelPricingConfig[] = [
-  // Keep newly launched models at index 0: the home page renders Claude rows in
-  // config order and the pricing page builds its modelOrder map from this array.
-  // The pricing page additionally pins isNew models in its sort comparators, so
-  // the first entry stays at the top of both pages.
+  // Keep newly launched (isNew) models at the top of the array: the home page
+  // renders model rows in config order and the pricing page builds its
+  // modelOrder map from this array. The pricing page additionally pins isNew
+  // models in its sort comparators, so these first entries stay at the top of
+  // both pages (gpt-6.2 models first, then claude-fable-5-2).
+  {
+    name: 'gpt-6.2-astra',
+    cacheHit: '>93%',
+    isNew: true,
+  },
+  {
+    name: 'gpt-6.2-sol',
+    cacheHit: '>93%',
+    isNew: true,
+  },
   {
     name: 'claude-fable-5-2',
     icon: 'Anthropic',
