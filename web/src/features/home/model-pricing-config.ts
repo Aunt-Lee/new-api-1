@@ -1,0 +1,243 @@
+/*
+Copyright (C) 2023-2026 QuantumNous
+
+This program is free software: you can redistribute it and/or modify
+it under the terms of the GNU Affero General Public License as
+published by the Free Software Foundation, either version 3 of the
+License, or (at your option) any later version.
+
+This program is distributed in the hope that it will be useful,
+but WITHOUT ANY WARRANTY; without even the implied warranty of
+MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
+GNU Affero General Public License for more details.
+
+You should have received a copy of the GNU Affero General Public License
+along with this program. If not, see <https://www.gnu.org/licenses/>.
+
+For commercial licensing, please contact support@quantumnous.com
+*/
+/**
+ * 首页模型价格对比配置
+ * 您可以在这里自定义显示的模型、价格和公告信息
+ */
+
+export interface ModelPricingConfig {
+  name: string
+  // Unversioned model ids that /api/pricing may still report. Used only as a
+  // lookup fallback so changing a display name never drops the price row.
+  aliases?: string[]
+  icon?: string
+  cacheHit?: string
+  pricingNote?: string
+  // Raw text shown next to pricingNote on the same line (e.g. a model
+  // version marker). Not translated, unlike pricingNote.
+  pricingNoteExtra?: string
+  officialInputPrice?: number
+  officialOutputPrice?: number
+  // Freshly launched model. This single flag drives both the "New" badge and
+  // the top-of-list placement on the home page and the model pricing page, so
+  // the two pages can never disagree about which model is new.
+  isNew?: boolean
+}
+
+/**
+ * 货币单位配置
+ * currency: 'USD' | 'CNY' - 美元或人民币
+ * symbol: 显示符号，如 '$' 或 '¥'
+ */
+export const pricingCurrencyConfig = {
+  // 货币类型：'USD' 或 'CNY'
+  currency: 'USD' as 'USD' | 'CNY',
+  // 显示符号
+  symbol: '$',
+}
+
+/**
+ * 表头标题配置
+ * 可自定义各列的显示标题
+ */
+export const pricingHeaderConfig = {
+  model: 'Model',
+  input: 'Minimum Input (1M)',
+  output: 'Minimum Output (1M)',
+  official: 'Official Input / Output (1M)',
+  discount: 'Discount',
+}
+
+export const featuredModelNames = [
+  'gpt-6.2-astra',
+  'gpt-6.2-sol',
+  'claude-fable-5-2',
+  'claude-fable-5',
+  'claude-opus-5-5',
+  'claude-opus-5',
+  'claude-sonnet-5',
+  'gpt-6-sol',
+  'gpt-6-astra',
+  'gpt-5.6-sol',
+  'gpt-5.6-luna',
+  'grok-4.7',
+  'grok-4.6',
+] as const
+
+/**
+ * 配置首页需要展示的模型
+ * - name: 模型名称
+ * - icon: 首页模型图标覆盖值
+ * - cacheHit: 缓存命中展示文本
+ *
+ * 价格从后台 /api/pricing 的模型倍率配置读取，不在前端写死。
+ */
+export const modelPricingConfig: ModelPricingConfig[] = [
+  // Keep newly launched (isNew) models at the top of the array: the home page
+  // renders model rows in config order and the pricing page builds its
+  // modelOrder map from this array. The pricing page additionally pins isNew
+  // models in its sort comparators, so these first entries stay at the top of
+  // both pages (gpt-6.2 models first, then claude-fable-5-2).
+  {
+    name: 'gpt-6.2-astra',
+    cacheHit: '>93%',
+    isNew: true,
+  },
+  {
+    name: 'gpt-6.2-sol',
+    cacheHit: '>93%',
+    isNew: true,
+  },
+  {
+    name: 'claude-fable-5-2',
+    icon: 'Anthropic',
+    cacheHit: '>93%',
+    officialInputPrice: 8,
+    officialOutputPrice: 40,
+    isNew: true,
+  },
+  {
+    name: 'claude-fable-5-1',
+    icon: 'Anthropic',
+    cacheHit: '>93%',
+  },
+  {
+    name: 'claude-fable-5',
+    cacheHit: '>93%',
+  },
+  {
+    name: 'claude-opus-5-5',
+    cacheHit: '>93%',
+  },
+  {
+    name: 'claude-opus-5',
+    cacheHit: '>93%',
+    officialInputPrice: 5,
+    officialOutputPrice: 25,
+  },
+  {
+    name: 'claude-opus-4-8',
+    cacheHit: '>93%',
+  },
+  {
+    name: 'claude-sonnet-5-5',
+    cacheHit: '>93%',
+  },
+  {
+    name: 'claude-sonnet-5',
+    cacheHit: '>93%',
+  },
+  {
+    name: 'gpt-6.1-sol',
+    cacheHit: '>93%',
+  },
+  {
+    name: 'gpt-6.1-terra',
+    cacheHit: '>93%',
+  },
+  {
+    name: 'gpt-6-luna',
+    cacheHit: '>93%',
+  },
+  {
+    name: 'gpt-6-sol',
+    cacheHit: '>93%',
+  },
+  {
+    name: 'gpt-6-astra',
+    cacheHit: '>93%',
+  },
+  {
+    name: 'gpt-5.6-sol',
+    cacheHit: '>93%',
+  },
+  {
+    name: 'gpt-5.6-luna',
+    cacheHit: '>93%',
+  },
+  {
+    name: 'gpt-5.5',
+    cacheHit: '>93%',
+  },
+  {
+    name: 'claude-opus-4-7',
+    cacheHit: '>93%',
+  },
+  {
+    name: 'claude-opus-4-6',
+    cacheHit: '>93%',
+  },
+  {
+    name: 'claude-sonnet-4-6',
+    cacheHit: '>93%',
+  },
+  {
+    name: 'claude-haiku-5-5',
+  },
+  {
+    name: 'claude-haiku-4-5',
+    cacheHit: '>93%',
+  },
+  {
+    name: 'gpt-5.6-terra',
+    cacheHit: '>93%',
+  },
+  {
+    name: 'gpt-5.4',
+    cacheHit: '>93%',
+  },
+  {
+    name: 'gpt-5.3-codex',
+    cacheHit: '>93%',
+  },
+  {
+    name: 'grok-4.7',
+  },
+  {
+    name: 'grok-4.6',
+  },
+  {
+    name: 'grok-4.5',
+  },
+  {
+    name: 'grok-4.3',
+  },
+  {
+    name: 'deepseek-v4-pro-0813',
+    aliases: ['deepseek-v4-pro'],
+  },
+  {
+    name: 'deepseek-v4.1-flash-1017',
+    aliases: ['deepseek-v4.1-flash'],
+  },
+]
+
+/**
+ * Model ids carrying the "New" badge. Derived from modelPricingConfig so the
+ * badge cannot drift away from the pinned-to-top model list.
+ */
+export const NEW_MODEL_NAMES: ReadonlySet<string> = new Set(
+  modelPricingConfig
+    .filter((model) => model.isNew)
+    .map((model) => model.name)
+)
+
+export function isNewModel(modelName: string): boolean {
+  return NEW_MODEL_NAMES.has(modelName)
+}

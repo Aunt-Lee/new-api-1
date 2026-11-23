@@ -37,6 +37,7 @@ import {
   getEndpointTypeLabels,
   getQuotaTypeLabels,
 } from '../constants'
+import { LIMITED_TIME_GROUPS } from './pelican-test-section'
 import { getModelQuotaType, parseTags } from '../lib/filters'
 import type { PricingModel, PricingVendor } from '../types'
 
@@ -46,6 +47,9 @@ type FilterOption = {
   count?: number
   suffix?: string
   icon?: ReactNode
+  // Optional inline badge (e.g. the limited-time group marker). Kept separate
+  // from `label` so the chip's HTML title remains a plain string.
+  badge?: ReactNode
 }
 
 type FilterSectionProps = {
@@ -103,6 +107,7 @@ function FilterChip(props: {
         <span className='shrink-0'>{props.option.icon}</span>
       )}
       <span className='truncate'>{props.option.label}</span>
+      {props.option.badge}
       {(props.option.suffix || props.option.count != null) && (
         <span
           className={cn(
@@ -204,6 +209,14 @@ export const PricingSidebar = memo(function PricingSidebar(
       value: group,
       label: group,
       suffix: formatGroupRatio(props.groupRatios?.[group]),
+      badge: LIMITED_TIME_GROUPS.includes(group) ? (
+        <Badge
+          variant='outline'
+          className='h-4 shrink-0 border-amber-500/40 bg-amber-500/10 px-1.5 text-[10px] leading-none font-semibold text-amber-600 dark:text-amber-400'
+        >
+          {t('Limited time')}
+        </Badge>
+      ) : undefined,
     })),
   ]
 

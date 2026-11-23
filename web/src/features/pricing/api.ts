@@ -29,3 +29,26 @@ export async function getPricing(): Promise<PricingData> {
   const res = await api.get('/api/pricing')
   return res.data
 }
+
+// ----------------------------------------------------------------------------
+// Model degradation probe APIs (internally named "pelican probe": the table,
+// endpoint and symbols keep their historical names; the subject is now an
+// animated little crocodile riding a bicycle).
+// ----------------------------------------------------------------------------
+
+export interface PelicanTestResult {
+  group: string
+  model_name: string
+  content?: string
+  status: string
+  created_at: number
+}
+
+// Recent animated "little crocodile on a bicycle" probe results for each group, newest first.
+export async function getPelicanTests(): Promise<PelicanTestResult[]> {
+  const res = await api.get<{
+    success: boolean
+    data: PelicanTestResult[]
+  }>('/api/pelican-test')
+  return res.data?.data ?? []
+}

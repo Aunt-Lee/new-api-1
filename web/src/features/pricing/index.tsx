@@ -16,11 +16,18 @@ along with this program. If not, see <https://www.gnu.org/licenses/>.
 
 For commercial licensing, please contact support@quantumnous.com
 */
+import { useQueries } from '@tanstack/react-query'
 import { useCallback, useMemo, useState } from 'react'
 import { useTranslation } from 'react-i18next'
 
 import { PublicLayout } from '@/components/layout'
 import { PageTransition } from '@/components/page-transition'
+import { getPerfMetrics } from '@/features/performance-metrics/api'
+import {
+  formatUptimePct,
+  getSuccessRateTextClass,
+} from '@/features/performance-metrics/lib/format'
+import { cn } from '@/lib/utils'
 
 import {
   LoadingSkeleton,
@@ -31,10 +38,33 @@ import {
   PricingToolbar,
   ModelCardGrid,
   ModelDetailsDrawer,
+  PelicanTestSection,
 } from './components'
-import { EXCLUDED_GROUPS, VIEW_MODES } from './constants'
+import { UptimeSparkline } from './components/model-details-uptime-sparkline'
+import { EXCLUDED_GROUPS, FILTER_ALL, VIEW_MODES } from './constants'
 import { useFilters } from './hooks/use-filters'
 import { usePricingData } from './hooks/use-pricing-data'
+import type { UptimeDayPoint } from './lib/mock-stats'
+
+// Some groups are served by a dedicated model whose live performance stats are
+// representative of the group. Kept in sync with the fork's production setup.
+const GROUP_PERFORMANCE_MODELS = {
+  'Claude Cursor': 'claude-sonnet-5-5',
+  'Claude Kiro': 'claude-sonnet-5',
+  'Claude Max': 'claude-sonnet-5',
+  'Gpt Pro': 'gpt-6.1-sol',
+  'Gpt Cheap': 'gpt-6.1-sol',
+  'Gpt Plus&Team': 'gpt-6.1-sol',
+  Luna: 'gpt-5.6-luna',
+  'Grok Heavy': 'grok-4.5',
+  'Grok Ultra': 'grok-4.7',
+  'DeepSeek-Pro': 'deepseek-v4-pro-0813',
+  'DeepSeek-Flash': 'deepseek-v4.1-flash-1017',
+} as const
+
+const PERFORMANCE_SOURCE_MODELS = [
+  ...new Set(Object.values(GROUP_PERFORMANCE_MODELS)),
+]
 
 export function Pricing() {
   const { t } = useTranslation()
@@ -53,6 +83,47 @@ export function Pricing() {
     priceRate,
     usdExchangeRate,
   } = usePricingData()
+
+  const performanceQueries = useQueries({
+    queries: PERFORMANCE_SOURCE_MODELS.map((modelName) => ({
+      queryKey: ['perf-metrics', modelName],
+      queryFn: () => getPerfMetrics(modelName, 24),
+      staleTime: 5 * 60 * 1000,
+      refetchInterval: 5 * 60 * 1000,
+      refetchOnMount: 'always',
+      retry: false,
+    })),
+  })
+  const groupSuccessRates = new Map<string, number>()
+  const groupSuccessRateSeries = new Map<string, UptimeDayPoint[]>()
+  for (const [index, modelName] of PERFORMANCE_SOURCE_MODELS.entries()) {
+    const groups = performanceQueries[index]?.data?.data.groups ?? []
+    for (const [groupName, sourceModel] of Object.entries(
+      GROUP_PERFORMANCE_MODELS
+    )) {
+      if (sourceModel !== modelName) continue
+      const performance = groups.find((group) => group.group === groupName)
+      if (performance && Number.isFinite(performance.success_rate)) {
+        groupSuccessRates.set(groupName, performance.success_rate)
+        groupSuccessRateSeries.set(
+          groupName,
+          (performance.series ?? []).map((point) => {
+            const successRate = Number.isFinite(point.success_rate)
+              ? Math.round(
+                  Math.min(100, Math.max(0, point.success_rate)) * 100
+                ) / 100
+              : 0
+            return {
+              date: new Date(point.ts * 1000).toISOString(),
+              uptime_pct: successRate,
+              incidents: successRate < 100 ? 1 : 0,
+              outage_minutes: 0,
+            }
+          })
+        )
+      }
+    }
+  }
 
   const {
     searchInput,
@@ -104,6 +175,17 @@ export function Pricing() {
       ),
     [usableGroup]
   )
+
+  // Only groups with a known performance source get a success-rate readout.
+  // With no group filter we show every visible group that has one.
+  const performanceGroups = useMemo(() => {
+    const candidates =
+      groupFilter === FILTER_ALL ? availableGroups : [groupFilter]
+    return candidates.filter(
+      (group): group is keyof typeof GROUP_PERFORMANCE_MODELS =>
+        group in GROUP_PERFORMANCE_MODELS
+    )
+  }, [availableGroups, groupFilter])
 
   const handleClearAll = useCallback(() => {
     clearFilters()
@@ -256,7 +338,57 @@ export function Pricing() {
                 onClearFilters={clearFilters}
               />
 
+              {performanceGroups.length > 0 && (
+                <div className='border-border/70 bg-card/60 flex flex-wrap items-center gap-x-4 gap-y-2 rounded-xl border px-3 py-2 text-xs'>
+                  <span className='text-muted-foreground shrink-0 font-medium'>
+                    {t('24h Success rate')}
+                  </span>
+                  {performanceGroups.map((group) => {
+                    const sourceModel = GROUP_PERFORMANCE_MODELS[group]
+                    const successRate = groupSuccessRates.get(group)
+                    const successRateSeries =
+                      groupSuccessRateSeries.get(group) ?? []
+
+                    return (
+                      <div
+                        key={group}
+                        className='flex items-center gap-2'
+                      >
+                        <span className='text-muted-foreground max-w-32 truncate'>
+                          {group}{' '}
+                          <span
+                            className='font-mono'
+                            title={sourceModel}
+                          >
+                            {sourceModel}
+                          </span>
+                        </span>
+                        {successRateSeries.length > 0 && (
+                          <UptimeSparkline
+                            size='sm'
+                            showOverall={false}
+                            series={successRateSeries}
+                          />
+                        )}
+                        <span
+                          className={cn(
+                            'font-mono font-medium tabular-nums',
+                            getSuccessRateTextClass(
+                              successRate ?? Number.NaN
+                            )
+                          )}
+                        >
+                          {formatUptimePct(successRate ?? Number.NaN)}
+                        </span>
+                      </div>
+                    )
+                  })}
+                </div>
+              )}
+
               {renderPricingContent()}
+
+              <PelicanTestSection />
             </main>
           </div>
 
