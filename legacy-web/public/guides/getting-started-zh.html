@@ -1,0 +1,151 @@
+<!doctype html>
+<html lang="zh-CN">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>NewtonRouter 接入指南 | GPT、Claude、Grok 统一 API</title>
+    <meta
+      name="description"
+      content="了解如何通过 NewtonRouter 统一接入 GPT、Claude、Grok：OpenAI 兼容 Base URL、API 调用示例、模型价格与套餐来源，以及常见问答。"
+    />
+    <link rel="canonical" href="https://newtonrouter.com/guides/getting-started-zh.html" />
+    <link
+      rel="alternate"
+      hreflang="en"
+      href="https://newtonrouter.com/guides/getting-started.html"
+    />
+    <link
+      rel="alternate"
+      hreflang="zh-CN"
+      href="https://newtonrouter.com/guides/getting-started-zh.html"
+    />
+    <link
+      rel="alternate"
+      hreflang="x-default"
+      href="https://newtonrouter.com/guides/getting-started.html"
+    />
+    <link rel="stylesheet" href="/guides/guide.css" />
+    <link rel="icon" href="/logo.png" />
+    <meta property="og:type" content="article" />
+    <meta property="og:site_name" content="NewtonRouter" />
+    <meta property="og:title" content="NewtonRouter 接入指南 | GPT、Claude、Grok 统一 API" />
+    <meta
+      property="og:description"
+      content="一个 API 地址和密钥接入多种 AI 模型。查看 Base URL、调用示例和价格来源。"
+    />
+    <meta property="og:url" content="https://newtonrouter.com/guides/getting-started-zh.html" />
+    <meta property="og:image" content="https://newtonrouter.com/logo.png" />
+    <meta name="twitter:card" content="summary" />
+    <script type="application/ld+json">
+      {
+        "@context": "https://schema.org",
+        "@type": "TechArticle",
+        "headline": "NewtonRouter 接入指南",
+        "url": "https://newtonrouter.com/guides/getting-started-zh.html",
+        "inLanguage": "zh-CN",
+        "author": {
+          "@type": "Organization",
+          "name": "NewtonRouter",
+          "url": "https://newtonrouter.com/"
+        },
+        "about": {
+          "@type": "WebApplication",
+          "name": "NewtonRouter",
+          "url": "https://newtonrouter.com/",
+          "applicationCategory": "DeveloperApplication"
+        }
+      }
+    </script>
+  </head>
+  <body>
+    <header>
+      <a class="brand" href="/"
+        ><img src="/logo.png" alt="" width="40" height="40" />NewtonRouter</a
+      >
+      <nav aria-label="主导航">
+        <a href="/pricing">模型定价</a><a href="/plans">折扣套餐</a
+        ><a href="/guides/getting-started.html" lang="en">English</a>
+      </nav>
+    </header>
+    <main>
+      <h1>NewtonRouter 接入指南</h1>
+      <p>
+        NewtonRouter 是一个 AI 模型统一接口平台，使用一个 API 地址和密钥，即可接入 GPT、Claude、Grok
+        等系列模型。平台提供模型价格对比、API 密钥、调用记录和订阅套餐。
+      </p>
+      <h2>适合谁使用？</h2>
+      <p>
+        适合需要对比模型并通过统一接口接入的个人开发者、AI 应用团队和自动化用户。兼容 OpenAI API
+        的客户端可通过配置 Base URL、API Key 和模型 ID 接入；具体功能仍取决于所选模型和接口。
+      </p>
+      <h2>如何接入应用？</h2>
+      <ol>
+        <li><a href="/register">注册</a>并登录，按需充值或选择<a href="/plans">套餐</a>。</li>
+        <li>在<a href="/keys">控制台</a>创建 API Key。</li>
+        <li>
+          将 OpenAI 兼容 SDK 的 Base URL 设置为
+          <code>https://newtonrouter.com/v1</code>，填入密钥，并从<a href="/pricing">模型定价</a
+          >页面选择可用的模型 ID。
+        </li>
+      </ol>
+      <p>
+        如果客户端会自动添加 <code>/v1</code>，请填入
+        <code>https://newtonrouter.com</code>，避免请求路径出现 <code>/v1/v1</code>。
+      </p>
+      <h2>Chat Completions 调用示例</h2>
+      <p>
+        将 <code>YOUR_API_KEY</code> 换成自己的密钥，<code>MODEL_ID</code> 换成支持 Chat Completions
+        接口的可用模型 ID。
+      </p>
+      <pre><code>curl https://newtonrouter.com/v1/chat/completions \
+  -H "Authorization: Bearer YOUR_API_KEY" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "model": "MODEL_ID",
+    "messages": [{"role": "user", "content": "Hello"}]
+  }'</code></pre>
+      <h2>价格和可用模型以哪里为准？</h2>
+      <p>
+        <a href="/pricing">模型定价页面</a>展示当前可用模型及其价格。输入和输出 Token
+        的单价可能不同，所选分组也会影响费用；调用前请查看模型的计费单位和规则。
+      </p>
+      <p>
+        <a href="/plans">折扣套餐页面</a>展示可购买的订阅套餐和 Token
+        用量估算。估算受所选模型及输入、输出比例影响，不是保证可使用的 Token
+        配额。可用模型、价格和套餐可能调整。
+      </p>
+      <h2>常见问答</h2>
+      <h3>NewtonRouter 是模型厂商的官网吗？</h3>
+      <p>
+        NewtonRouter 是将请求转发到上游服务的 API 平台。OpenAI/GPT、Anthropic/Claude 和 xAI/Grok
+        是独立的厂商和品牌，其名称仅用于标识模型系列，不代表官方背书。
+      </p>
+      <h3>一个接口能使用所有厂商的全部功能吗？</h3>
+      <p>
+        支持范围取决于模型、接口和渠道。兼容 OpenAI API
+        不意味着支持全部厂商专有功能；请查看模型支持的接口，并测试应用需要的功能。
+      </p>
+      <h3>24h 成功率代表什么？</h3>
+      <p>
+        它是模型定价页面展示的服务历史统计，不是未来可用性保证，也不是厂商官方状态。如果分组使用某个模型作为数据来源，页面标出的模型名称即为该统计对应的模型。
+      </p>
+      <h3>在哪里查看消费？</h3>
+      <p>登录后可在控制台查看余额、调用日志和用量记录。</p>
+      <h3>如何联系支持？</h3>
+      <p>
+        可通过
+        <a href="mailto:newtonrouter@gmail.com">newtonrouter@gmail.com</a>
+        联系支持。服务条款和数据处理说明请查看<a href="/user-agreement">用户协议</a>和<a
+          href="/privacy-policy"
+          >隐私政策</a
+        >。
+      </p>
+    </main>
+    <footer>
+      <p>
+        NewtonRouter 基于 <a href="https://github.com/QuantumNous/new-api">New API</a> 构建。New API
+        由 QuantumNous 和贡献者维护，按 GNU AGPL v3 发布。模型名称和商标归各自权利人所有。
+      </p>
+    </footer>
+  </body>
+</html>

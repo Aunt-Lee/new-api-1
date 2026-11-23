@@ -1,0 +1,160 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>NewtonRouter API guide | GPT, Claude and Grok</title>
+    <meta
+      name="description"
+      content="Connect GPT, Claude and Grok through NewtonRouter. Find the OpenAI-compatible Base URL, a request example, pricing links and answers to common questions."
+    />
+    <link rel="canonical" href="https://newtonrouter.com/guides/getting-started.html" />
+    <link
+      rel="alternate"
+      hreflang="en"
+      href="https://newtonrouter.com/guides/getting-started.html"
+    />
+    <link
+      rel="alternate"
+      hreflang="zh-CN"
+      href="https://newtonrouter.com/guides/getting-started-zh.html"
+    />
+    <link
+      rel="alternate"
+      hreflang="x-default"
+      href="https://newtonrouter.com/guides/getting-started.html"
+    />
+    <link rel="stylesheet" href="/guides/guide.css" />
+    <link rel="icon" href="/logo.png" />
+    <meta property="og:type" content="article" />
+    <meta property="og:site_name" content="NewtonRouter" />
+    <meta property="og:title" content="NewtonRouter API guide | GPT, Claude and Grok" />
+    <meta
+      property="og:description"
+      content="One API address and key for multiple AI models. Base URL, request example and pricing sources."
+    />
+    <meta property="og:url" content="https://newtonrouter.com/guides/getting-started.html" />
+    <meta property="og:image" content="https://newtonrouter.com/logo.png" />
+    <meta name="twitter:card" content="summary" />
+    <script type="application/ld+json">
+      {
+        "@context": "https://schema.org",
+        "@type": "TechArticle",
+        "headline": "NewtonRouter API guide",
+        "url": "https://newtonrouter.com/guides/getting-started.html",
+        "inLanguage": "en",
+        "author": {
+          "@type": "Organization",
+          "name": "NewtonRouter",
+          "url": "https://newtonrouter.com/"
+        },
+        "about": {
+          "@type": "WebApplication",
+          "name": "NewtonRouter",
+          "url": "https://newtonrouter.com/",
+          "applicationCategory": "DeveloperApplication"
+        }
+      }
+    </script>
+  </head>
+  <body>
+    <header>
+      <a class="brand" href="/"
+        ><img src="/logo.png" alt="" width="40" height="40" />NewtonRouter</a
+      >
+      <nav aria-label="Main navigation">
+        <a href="/pricing">Model pricing</a><a href="/plans">Plans</a
+        ><a href="/guides/getting-started-zh.html" lang="zh-CN">中文</a>
+      </nav>
+    </header>
+    <main>
+      <h1>NewtonRouter API guide</h1>
+      <p>
+        NewtonRouter is a unified AI model API platform. Use one API address and key to access
+        models from families such as GPT, Claude and Grok. The platform provides model price
+        comparisons, API keys, usage records and subscription plans.
+      </p>
+      <h2>Who is NewtonRouter for?</h2>
+      <p>
+        Individual developers, AI application teams and automation users who want to compare models
+        and connect them through a common interface. OpenAI-compatible clients can use NewtonRouter
+        by configuring the API Base URL, API key and model ID. Each client's supported features
+        still depend on the model and endpoint selected.
+      </p>
+      <h2>Connect an application</h2>
+      <ol>
+        <li>
+          <a href="/register">Register</a> and sign in. Add balance or choose a
+          <a href="/plans">plan</a> as needed.
+        </li>
+        <li>Create an API key in the <a href="/keys">console</a>.</li>
+        <li>
+          Set the OpenAI-compatible SDK Base URL to <code>https://newtonrouter.com/v1</code>, supply
+          your key and select an available model ID from <a href="/pricing">model pricing</a>.
+        </li>
+      </ol>
+      <p>
+        If your client appends <code>/v1</code> automatically, use
+        <code>https://newtonrouter.com</code> instead. Avoid sending requests to a path containing
+        <code>/v1/v1</code>.
+      </p>
+      <h2>Chat Completions request example</h2>
+      <p>
+        Replace <code>YOUR_API_KEY</code> and <code>MODEL_ID</code> with your key and an available
+        model that supports Chat Completions.
+      </p>
+      <pre><code>curl https://newtonrouter.com/v1/chat/completions \
+  -H "Authorization: Bearer YOUR_API_KEY" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "model": "MODEL_ID",
+    "messages": [{"role": "user", "content": "Hello"}]
+  }'</code></pre>
+      <h2>Pricing and availability</h2>
+      <p>
+        The <a href="/pricing">model pricing page</a> is the source for currently available models
+        and their displayed rates. Input and output token prices can differ, and the selected group
+        affects the rate. Review the model's units and billing rules before making requests.
+      </p>
+      <p>
+        The <a href="/plans">plans page</a> lists available subscriptions and token usage estimates.
+        Estimates depend on the selected model and input/output assumptions; they are not a
+        guaranteed token allowance. Models, prices and plans may change.
+      </p>
+      <h2>Frequently asked questions</h2>
+      <h3>Is NewtonRouter a model provider's official website?</h3>
+      <p>
+        NewtonRouter is an API platform that routes requests to upstream services. OpenAI/GPT,
+        Anthropic/Claude and xAI/Grok are separate providers and brands. Their names identify model
+        families and do not imply endorsement.
+      </p>
+      <h3>Can I use every provider feature through the same API?</h3>
+      <p>
+        Support varies by model, endpoint and channel. OpenAI-compatible does not mean every
+        provider-specific feature is supported. Check the model's supported endpoints and test the
+        features required by your application.
+      </p>
+      <h3>What does the 24-hour success rate mean?</h3>
+      <p>
+        It is an observed service statistic shown on the pricing page, not a future uptime guarantee
+        or the provider's official status. Where a group is represented by one model, the displayed
+        model name identifies that data source.
+      </p>
+      <h3>Where can I check spending?</h3>
+      <p>Sign in to view your balance, request logs and usage records in the console.</p>
+      <h3>Where can I ask for help?</h3>
+      <p>
+        Contact <a href="mailto:newtonrouter@gmail.com">newtonrouter@gmail.com</a>. Read the
+        <a href="/user-agreement">user agreement</a> and
+        <a href="/privacy-policy">privacy policy</a> for service terms and data handling.
+      </p>
+    </main>
+    <footer>
+      <p>
+        NewtonRouter is built on <a href="https://github.com/QuantumNous/new-api">New API</a>,
+        maintained by QuantumNous and contributors under the GNU AGPL v3. Model names and trademarks
+        belong to their respective owners.
+      </p>
+    </footer>
+  </body>
+</html>

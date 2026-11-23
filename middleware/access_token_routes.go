@@ -310,6 +310,29 @@ var accessTokenRouteRules = map[string]accessTokenRouteRule{
 	"POST /api/deployments/:id/extend":                  accessTokenScopeRule("deployment:write"),
 	"DELETE /api/deployments/:id":                       accessTokenScopeRule("deployment:write"),
 
+	// router/legacy-compat-router.go (legacy UI compatibility). These are
+	// session/browser flows, not scoped API-key operations.
+	"GET /api/user/logout": accessTokenSessionRule,
+	"GET /api/oauth/state": accessTokenSessionRule,
+	"GET /api/user/token":  accessTokenSessionRule,
+
+	// router/api-router.go: ticket system (legacy fork contract v3.1).
+	"GET /api/ticket":                       accessTokenScopeRule("usage:read"),
+	"GET /api/ticket/":                      accessTokenScopeRule("usage:read"),
+	"POST /api/ticket/":                     accessTokenScopeRule("usage:read"),
+	"GET /api/ticket/unread-count":          accessTokenScopeRule("usage:read"),
+	"GET /api/ticket/item/:id":              accessTokenScopeRule("usage:read"),
+	"POST /api/ticket/item/:id/reply":       accessTokenScopeRule("usage:read"),
+	"PUT /api/ticket/item/:id/status":       accessTokenScopeRule("usage:read"),
+	"POST /api/ticket/item/:id/read":        accessTokenScopeRule("usage:read"),
+	"GET /api/ticket/admin":                 accessTokenScopeRule("log:read"),
+	"GET /api/ticket/admin/":                accessTokenScopeRule("log:read"),
+	"GET /api/ticket/admin/unread-count":    accessTokenScopeRule("log:read"),
+	"GET /api/ticket/admin/item/:id":        accessTokenScopeRule("log:read"),
+	"POST /api/ticket/admin/item/:id/reply": accessTokenScopeRule("log:read"),
+	"PUT /api/ticket/admin/item/:id/status": accessTokenScopeRule("log:read"),
+	"POST /api/ticket/admin/item/:id/read":  accessTokenScopeRule("log:read"),
+
 	// router/relay-router.go
 	"POST /pg/chat/completions": accessTokenSessionRule,
 }

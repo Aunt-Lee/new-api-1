@@ -4,6 +4,16 @@ package i18n
 // errors returned to AI clients, emails and notifications. Web console messages
 // are not listed here; the web console translates them (see common.Message).
 
+// Generic message keys used by the restored ticket controller. These names
+// existed in the legacy fork; kept additive so no rc51 constant changes.
+const (
+	MsgInvalidParams   = "common.invalid_params"
+	MsgInvalidInput    = "common.invalid_input"
+	MsgNotFound        = "common.not_found"
+	MsgOperationFailed = "common.operation_failed"
+	MsgAlreadyExists   = "common.already_exists"
+)
+
 // Errors returned to AI clients
 const (
 	MsgDatabaseError          = "common.database_error"

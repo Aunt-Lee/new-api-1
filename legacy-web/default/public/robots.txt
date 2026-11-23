@@ -1,0 +1,23 @@
+User-agent: *
+Allow: /
+Disallow: /api/
+Disallow: /v1/
+Disallow: /console/
+Disallow: /dashboard/
+Disallow: /admin/
+Disallow: /setup/
+Disallow: /sign-in
+Disallow: /sign-up
+Disallow: /oauth/
+Disallow: /keys
+Disallow: /channels
+Disallow: /users
+Disallow: /usage-logs
+Disallow: /wallet
+Disallow: /profile
+Disallow: /system-settings
+Disallow: /subscriptions
+Disallow: /chat
+Disallow: /register
+
+Sitemap: https://newtonrouter.com/sitemap.xml

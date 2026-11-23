@@ -377,6 +377,10 @@ func migrateDB() error {
 		&CasbinRule{},
 		&AuthzRole{},
 		&UserAccessToken{},
+		// Ticket system — AutoMigrate is idempotent; existing imported tables
+		// with data are preserved (no raw SQL / ALTER COLUMN / table rebuild).
+		&Ticket{},
+		&TicketMessage{},
 	)
 	if err != nil {
 		return err
