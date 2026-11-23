@@ -21,12 +21,18 @@ import dayjs from 'dayjs'
 import { ImageOff, ShieldCheck } from 'lucide-react'
 import { useTranslation } from 'react-i18next'
 
+import { Badge } from '@/components/ui/badge'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 
 import { getPelicanTests, type PelicanTestResult } from '../api'
 
-const PROBE_GROUPS = ['Gpt Plus&Team', 'Gpt Pro']
+const PROBE_GROUPS = ['Gpt Cheap', 'Gpt Pro', 'Gpt Plus&Team']
 const PROBE_HISTORY_SIZE = 4
+
+// Groups whose promotional pricing is time-limited get a static badge in the
+// probe card header and the pricing group tabs. Kept here so the probe section
+// and the pricing page stay in sync without a backend schema change.
+export const LIMITED_TIME_GROUPS = ['Gpt Cheap']
 
 // Loading an SVG through <img> keeps it in an inert image context: scripts
 // inside the SVG never execute, unlike injecting it into the page DOM.
@@ -62,7 +68,17 @@ function ProbeCard({
   return (
     <div className='bg-card rounded-xl border p-3'>
       <div className='flex flex-wrap items-center justify-between gap-1.5'>
-        <span className='text-sm font-semibold'>{group}</span>
+        <span className='flex items-center gap-1.5'>
+          <span className='text-sm font-semibold'>{group}</span>
+          {LIMITED_TIME_GROUPS.includes(group) && (
+            <Badge
+              variant='outline'
+              className='h-4 shrink-0 border-amber-500/40 bg-amber-500/10 px-1.5 text-[10px] leading-none font-semibold text-amber-600 dark:text-amber-400'
+            >
+              {t('Limited time')}
+            </Badge>
+          )}
+        </span>
         <span className='text-muted-foreground font-mono text-[11px]'>
           {latest?.model_name ?? 'gpt-6.1-sol'}
         </span>

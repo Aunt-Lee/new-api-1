@@ -54,7 +54,7 @@ const (
 )
 
 var (
-	pelicanProbeGroups = []string{"Gpt Pro", "Gpt Plus&Team"}
+	pelicanProbeGroups = []string{"Gpt Cheap", "Gpt Pro", "Gpt Plus&Team"}
 	pelicanProbeBusy   atomic.Bool
 	// Only touched by the scheduler goroutine, so no lock is needed.
 	pelicanProbeLastAttempt time.Time

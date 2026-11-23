@@ -23,6 +23,7 @@ import { useTranslation } from 'react-i18next'
 
 import { PublicLayout } from '@/components/layout'
 import { PageTransition } from '@/components/page-transition'
+import { Badge } from '@/components/ui/badge'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import {
   Empty,
@@ -50,6 +51,7 @@ import {
   PelicanTestSection,
   PricingModelList,
 } from './components'
+import { LIMITED_TIME_GROUPS } from './components/pelican-test-section'
 import { UptimeSparkline } from './components/model-details-uptime-sparkline'
 import { EXCLUDED_GROUPS } from './constants'
 import { usePricingData } from './hooks/use-pricing-data'
@@ -350,6 +352,14 @@ export function Pricing() {
                                             </span>
                                           )}
                                           {group}
+                                          {LIMITED_TIME_GROUPS.includes(group) && (
+                                            <Badge
+                                              variant='outline'
+                                              className='ml-1.5 h-4 border-amber-500/40 bg-amber-500/10 px-1.5 text-[10px] leading-none font-semibold text-amber-600 dark:text-amber-400'
+                                            >
+                                              {t('Limited time')}
+                                            </Badge>
+                                          )}
                                         </span>
                                       ))}
                                     </span>

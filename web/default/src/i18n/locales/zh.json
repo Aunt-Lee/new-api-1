@@ -4651,6 +4651,7 @@
     "tokens": "Token",
     "Tokens": "Token",
     "Long Context": "长上下文",
+    "Limited time": "限时",
     "Model Degradation Test": "模型降智测试",
     "At a random time, we ask each group to draw an animated SVG of a little crocodile riding a bicycle. The untouched model output is shown here.": "系统在随机时间请求各分组绘制「小鳄鱼骑自行车」的 SVG 动画，这里展示未经修改的模型原始输出。",
     "A little crocodile riding a bicycle": "小鳄鱼骑自行车",
