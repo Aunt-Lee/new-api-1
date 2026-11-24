@@ -49,6 +49,7 @@ func SetApiRouter(router *gin.Engine) {
 		adminPelicanRoute.Use(middleware.AdminAuth())
 		{
 			adminPelicanRoute.GET("/list", controller.ListPelicanTestsForAdmin)
+			adminPelicanRoute.GET("/groups", controller.GetProbeGroups)
 			adminPelicanRoute.POST("/publish/:id", controller.PublishPelicanTest)
 			adminPelicanRoute.POST("/discard/:id", controller.DiscardPelicanTest)
 		}

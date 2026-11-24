@@ -64,11 +64,34 @@ func GetPelicanTests(c *gin.Context) {
 	})
 }
 
-// RunPelicanTestsNow lets an administrator trigger a probe immediately (e.g.
-// right after deployment) without waiting for the randomized schedule.
-// It resets the schedule because a fresh successful row becomes the new anchor.
+// GetProbeGroups returns the groups that currently have enabled channels, so
+// the admin page can render a dynamic, refreshable selection list instead of
+// a hardcoded set of groups.
+func GetProbeGroups(c *gin.Context) {
+	groups, err := model.GetProbeGroups()
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"success": false, "message": err.Error()})
+		return
+	}
+	if groups == nil {
+		groups = make([]model.ProbeGroupInfo, 0)
+	}
+	c.Header("Cache-Control", "no-store")
+	c.JSON(http.StatusOK, gin.H{"success": true, "data": groups})
+}
+
+// RunPelicanTestsNow lets an administrator trigger a probe for the selected
+// groups. The request body may contain {"groups": ["Gpt Pro", ...]}; when
+// omitted, the configured default groups are used. Each run creates pending
+// results that must be reviewed before appearing on the public page.
 func RunPelicanTestsNow(c *gin.Context) {
-	results := service.RunPelicanProbes(c.Request.Context())
+	var req struct {
+		Groups []string `json:"groups"`
+	}
+	// Body is optional: an empty body must not be treated as a bad request.
+	_ = c.ShouldBindJSON(&req)
+
+	results := service.RunPelicanProbes(c.Request.Context(), req.Groups...)
 	if results == nil {
 		c.JSON(http.StatusConflict, gin.H{
 			"success": false,

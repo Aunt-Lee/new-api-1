@@ -17,6 +17,20 @@ along with this program. If not, see <https://www.gnu.org/licenses/>.
 For commercial licensing, please contact support@quantumnous.com
 */
 
+// A selectable probe target: a group with at least one enabled channel.
+export interface ProbeGroup {
+  group: string
+  channel_count: number
+  published_count: number
+  pending_count: number
+}
+
+export interface ProbeGroupsResponse {
+  success: boolean
+  message?: string
+  data: ProbeGroup[]
+}
+
 // One degradation-probe result as seen from the admin review page.
 export interface AdminDegradationTest {
   id: number
