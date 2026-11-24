@@ -148,10 +148,10 @@ func main() {
 	controller.RegisterScheduledSystemTasks()
 	service.StartSystemTaskRunner()
 
-	// Randomized (12-18h) animated "little crocodile riding a bicycle" SVG
-	// quality probes for the model square. Master-only; the untouched model
-	// output is stored and exposed publicly.
-	service.StartPelicanProbeScheduler()
+	// Degradation probes are now admin-triggered only: an admin runs the probe
+	// in the management page, reviews the raw SVG, then publishes it. No
+	// automatic background run may put unreviewed output on the public page.
+	// StartPelicanProbeScheduler() is intentionally not called.
 
 	if os.Getenv("BATCH_UPDATE_ENABLED") == "true" {
 		common.BatchUpdateEnabled = true

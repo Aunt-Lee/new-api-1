@@ -72,14 +72,22 @@ func PelicanProbeGroups() []string {
 	return groups
 }
 
-// StartPelicanProbeScheduler starts the random-interval probe loop. Only the
-// master node runs it, matching the other background tasks in this project.
+// StartPelicanProbeScheduler is intentionally a no-op. Probe runs are now
+// admin-triggered only (manual detection + review + publish); automatic
+// background runs were removed so nothing reaches the public page without an
+// admin's approval. The function is kept as a no-op for compatibility with the
+// call site and the legacy build; do not restart the loop here.
 func StartPelicanProbeScheduler() {
+	common.SysLog("pelican probe: automatic scheduler disabled (admin-triggered only)")
+}
+
+// startPelicanProbeSchedulerLegacy retains the former loop body for reference
+// only; it is not called. Kept to make the behavior change explicit.
+func startPelicanProbeSchedulerLegacy() {
 	if !common.IsMasterNode {
 		return
 	}
 	go func() {
-		// The probe calls our own /v1 endpoint, so let the HTTP server bind first.
 		time.Sleep(pelicanProbeStartupDelay)
 		for {
 			runPelicanSchedulerTick()
@@ -142,6 +150,7 @@ func RunPelicanProbes(ctx context.Context) []model.PelicanTest {
 			Group:     group,
 			ModelName: pelicanProbeModel,
 			Status:    model.PelicanTestStatusInvalid,
+			Pending:   true,
 		}
 		svg, err := requestPelicanSVG(ctx, group)
 		if err != nil {

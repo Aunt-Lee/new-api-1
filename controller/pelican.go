@@ -2,6 +2,7 @@ package controller
 
 import (
 	"net/http"
+	"strconv"
 
 	"github.com/QuantumNous/new-api/model"
 	"github.com/QuantumNous/new-api/service"
@@ -17,6 +18,19 @@ type pelicanTestView struct {
 	Content   string `json:"content,omitempty"`
 	Status    string `json:"status"`
 	CreatedAt int64  `json:"created_at"`
+}
+
+// adminPelicanTestView is the admin shape: it additionally exposes the record
+// id (for publish/discard actions), fail reason and review state.
+type adminPelicanTestView struct {
+	Id         int    `json:"id"`
+	Group      string `json:"group"`
+	ModelName  string `json:"model_name"`
+	Content    string `json:"content,omitempty"`
+	Status     string `json:"status"`
+	FailReason string `json:"fail_reason,omitempty"`
+	Pending    bool   `json:"pending"`
+	CreatedAt  int64  `json:"created_at"`
 }
 
 const pelicanTestsPerGroup = 4
@@ -66,4 +80,58 @@ func RunPelicanTestsNow(c *gin.Context) {
 		"success": true,
 		"data":    results,
 	})
+}
+
+// ListPelicanTestsForAdmin returns recent results for every group, including
+// pending (unreviewed) ones, so an admin can review raw SVG before publishing.
+func ListPelicanTestsForAdmin(c *gin.Context) {
+	rows, err := model.GetLatestPelicanTestsForAdmin(service.PelicanProbeGroups(), pelicanTestsPerGroup)
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"success": false, "message": err.Error()})
+		return
+	}
+	views := make([]adminPelicanTestView, 0, len(rows))
+	for _, row := range rows {
+		views = append(views, adminPelicanTestView{
+			Id:         row.Id,
+			Group:      row.Group,
+			ModelName:  row.ModelName,
+			Content:    row.Content,
+			Status:     row.Status,
+			FailReason: row.FailReason,
+			Pending:    row.Pending,
+			CreatedAt:  row.CreatedAt,
+		})
+	}
+	c.Header("Cache-Control", "no-store")
+	c.JSON(http.StatusOK, gin.H{"success": true, "data": views})
+}
+
+// PublishPelicanTest marks a pending result as published so it appears on the
+// public pricing page.
+func PublishPelicanTest(c *gin.Context) {
+	id, err := strconv.Atoi(c.Param("id"))
+	if err != nil || id <= 0 {
+		c.JSON(http.StatusBadRequest, gin.H{"success": false, "message": "invalid id"})
+		return
+	}
+	if err := model.PublishPelicanTest(id); err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"success": false, "message": err.Error()})
+		return
+	}
+	c.JSON(http.StatusOK, gin.H{"success": true})
+}
+
+// DiscardPelicanTest permanently removes a pending result the admin rejects.
+func DiscardPelicanTest(c *gin.Context) {
+	id, err := strconv.Atoi(c.Param("id"))
+	if err != nil || id <= 0 {
+		c.JSON(http.StatusBadRequest, gin.H{"success": false, "message": "invalid id"})
+		return
+	}
+	if err := model.DeletePelicanTest(id); err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"success": false, "message": err.Error()})
+		return
+	}
+	c.JSON(http.StatusOK, gin.H{"success": true})
 }
