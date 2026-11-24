@@ -30,6 +30,14 @@ func SetApiRouter(router *gin.Engine) {
 		apiRouter.GET("/uptime/status", controller.GetUptimeKumaStatus)
 		apiRouter.GET("/models", middleware.UserAuth(), controller.DashboardListModels)
 		apiRouter.GET("/status/test", middleware.AdminAuth(), controller.TestStatus)
+		// Admin-only degradation-probe management: trigger, review, publish, discard.
+		adminPelicanRoute := apiRouter.Group("/pelican-test/admin")
+		adminPelicanRoute.Use(middleware.AdminAuth())
+		{
+			adminPelicanRoute.GET("/list", controller.ListPelicanTestsForAdmin)
+			adminPelicanRoute.POST("/publish/:id", controller.PublishPelicanTest)
+			adminPelicanRoute.POST("/discard/:id", controller.DiscardPelicanTest)
+		}
 		apiRouter.POST("/pelican-test/run", middleware.AdminAuth(), controller.RunPelicanTestsNow)
 		apiRouter.GET("/notice", controller.GetNotice)
 		apiRouter.GET("/user-agreement", controller.GetUserAgreement)

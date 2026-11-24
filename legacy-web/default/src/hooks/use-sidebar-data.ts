@@ -30,6 +30,7 @@ import {
   Radio,
   ServerCog,
   Settings,
+  ShieldCheck,
   Ticket,
   User,
   Users,
@@ -161,6 +162,12 @@ export function useSidebarData(): SidebarData {
             url: '/ticket-management',
             icon: LifeBuoy,
             badge: adminBadge,
+            requiredRole: ROLE.ADMIN,
+          },
+          {
+            title: t('Degradation Detection'),
+            url: '/degradation-detection',
+            icon: ShieldCheck,
             requiredRole: ROLE.ADMIN,
           },
           {

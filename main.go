@@ -167,8 +167,8 @@ func main() {
 	// Subscription quota reset task (daily/weekly/monthly/custom)
 	service.StartSubscriptionQuotaResetTask()
 
-	// Model-degradation probe scheduler (master node only, enforced inside).
-	service.StartPelicanProbeScheduler()
+	// Degradation probes are now admin-triggered only (manual detection +
+	// review + publish). StartPelicanProbeScheduler() is intentionally not called.
 
 	// Report this process as a system instance so the System Info page can show
 	// all currently alive nodes in multi-instance deployments.
