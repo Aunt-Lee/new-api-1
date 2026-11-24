@@ -7,6 +7,60 @@ const (
 	PelicanTestStatusInvalid = "invalid"
 )
 
+// ProbeGroupInfo describes a group that currently has at least one enabled
+// channel, together with its review state. The admin page uses this to build
+// the selectable probe target list dynamically instead of a hardcoded list.
+type ProbeGroupInfo struct {
+	Group          string `json:"group"`
+	ChannelCount   int64  `json:"channel_count"`
+	PublishedCount int64  `json:"published_count"`
+	PendingCount   int64  `json:"pending_count"`
+}
+
+// GetProbeGroups returns every group with at least one enabled channel plus a
+// per-group count of published/pending probe results. Querying abilities keeps
+// the list in sync with the actual channel configuration: adding a channel or
+// enabling a new group immediately makes it selectable, no code change needed.
+func GetProbeGroups() ([]ProbeGroupInfo, error) {
+	var groups []ProbeGroupInfo
+	if err := DB.Table("abilities").
+		Where("enabled = ?", true).
+		Select(commonGroupCol + ", COUNT(DISTINCT channel_id) AS channel_count").
+		Group(commonGroupCol).
+		Order(commonGroupCol).
+		Scan(&groups).Error; err != nil {
+		return nil, err
+	}
+
+	// Attach review stats. Legacy rows with NULL pending count as published,
+	// matching GetLatestPelicanTests.
+	type stat struct {
+		Group          string
+		PublishedCount int64
+		PendingCount   int64
+	}
+	var stats []stat
+	if err := DB.Model(&PelicanTest{}).
+		Select(commonGroupCol+", "+
+			"SUM(CASE WHEN pending = ? OR pending IS NULL THEN 1 ELSE 0 END) AS published_count, "+
+			"SUM(CASE WHEN pending = ? THEN 1 ELSE 0 END) AS pending_count", false, true).
+		Group(commonGroupCol).
+		Scan(&stats).Error; err != nil {
+		return nil, err
+	}
+	byGroup := make(map[string]stat, len(stats))
+	for _, s := range stats {
+		byGroup[s.Group] = s
+	}
+	for i := range groups {
+		if s, ok := byGroup[groups[i].Group]; ok {
+			groups[i].PublishedCount = s.PublishedCount
+			groups[i].PendingCount = s.PendingCount
+		}
+	}
+	return groups, nil
+}
+
 // PelicanTest stores one animated "little crocodile riding a bicycle" SVG
 // probe result for a group. The raw SVG is kept so the public page can show
 // the untouched model output. The historical "pelican" name is deliberately

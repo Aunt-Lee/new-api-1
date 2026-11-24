@@ -18,12 +18,14 @@ For commercial licensing, please contact support@quantumnous.com
 */
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { Play, RefreshCw } from 'lucide-react'
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import { useTranslation } from 'react-i18next'
 
 import { SectionPageLayout } from '@/components/layout'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
+import { Checkbox } from '@/components/ui/checkbox'
+import { Label } from '@/components/ui/label'
 import { Skeleton } from '@/components/ui/skeleton'
 import { ROLE } from '@/lib/roles'
 import { useAuthStore } from '@/stores/auth-store'
@@ -31,19 +33,23 @@ import { useAuthStore } from '@/stores/auth-store'
 import {
   discardDegradationTest,
   listDegradationTests,
+  listProbeGroups,
   publishDegradationTest,
   runDegradationTests,
 } from './api'
 import { DegradationResultCard } from './components/result-card'
-import type { AdminDegradationTest } from './types'
+import type { AdminDegradationTest, ProbeGroup } from './types'
 
 const QUERY_KEY = ['degradation-detection', 'list']
+const GROUPS_KEY = ['degradation-detection', 'groups']
 
 export function DegradationDetection() {
   const { t } = useTranslation()
   const queryClient = useQueryClient()
   const role = useAuthStore((state) => state.auth.user?.role ?? ROLE.GUEST)
   const [runMessage, setRunMessage] = useState<string | null>(null)
+  const [runConflict, setRunConflict] = useState(false)
+  const [selectedGroups, setSelectedGroups] = useState<string[]>([])
 
   const listQuery = useQuery({
     queryKey: QUERY_KEY,
@@ -58,11 +64,43 @@ export function DegradationDetection() {
     retry: false,
   })
 
-  const refresh = () => void queryClient.invalidateQueries({ queryKey: QUERY_KEY })
+  const groupsQuery = useQuery({
+    queryKey: GROUPS_KEY,
+    queryFn: async () => {
+      const res = await listProbeGroups()
+      if (!res.success || !Array.isArray(res.data)) {
+        throw new Error(res.message || t('We could not load channels.'))
+      }
+      return res.data
+    },
+    staleTime: 0,
+    retry: false,
+  })
+
+  // Default-select every group on first load; refresh keeps existing choices
+  // but drops ones that no longer have an enabled channel.
+  useEffect(() => {
+    const available = groupsQuery.data ?? []
+    if (available.length === 0) {
+      setSelectedGroups([])
+      return
+    }
+    setSelectedGroups((prev) => {
+      const valid = available.map((g) => g.group)
+      const kept = prev.filter((g) => valid.includes(g))
+      return prev.length === 0 || kept.length === 0 ? valid : kept
+    })
+  }, [groupsQuery.data])
+
+  const refresh = () => {
+    void queryClient.invalidateQueries({ queryKey: QUERY_KEY })
+    void queryClient.invalidateQueries({ queryKey: GROUPS_KEY })
+  }
 
   const runMutation = useMutation({
-    mutationFn: runDegradationTests,
+    mutationFn: (groups: string[]) => runDegradationTests(groups),
     onSuccess: (res) => {
+      setRunConflict(false)
       setRunMessage(
         res.success
           ? t('Probe finished. Review the new results below, then publish the ones you approve.')
@@ -71,6 +109,16 @@ export function DegradationDetection() {
       refresh()
     },
     onError: (err: unknown) => {
+      // 409 means a probe is still running on the server (e.g. triggered from
+      // another tab). Show a friendly notice instead of a scary raw error.
+      const axiosErr = err as { response?: { status?: number; data?: { message?: string } } }
+      if (axiosErr?.response?.status === 409) {
+        setRunConflict(true)
+        setRunMessage(t('A probe is already running. Wait for it to finish, then try again.'))
+        refresh()
+        return
+      }
+      setRunConflict(false)
       setRunMessage(err instanceof Error ? err.message : t('Probe failed.'))
     },
   })
@@ -99,6 +147,13 @@ export function DegradationDetection() {
   const pending = rows.filter((r) => r.pending)
   const published = rows.filter((r) => !r.pending)
   const busy = runMutation.isPending
+  const groups: ProbeGroup[] = groupsQuery.data ?? []
+
+  const toggleGroup = (group: string, checked: boolean) => {
+    setSelectedGroups((prev) =>
+      checked ? [...prev, group] : prev.filter((g) => g !== group)
+    )
+  }
 
   return (
     <SectionPageLayout fixedContent>
@@ -117,7 +172,7 @@ export function DegradationDetection() {
               <div className='min-w-0'>
                 <h3 className='text-sm font-semibold'>{t('Manual degradation probe')}</h3>
                 <p className='text-muted-foreground mt-0.5 text-xs'>
-                  {t('Run a probe for each group. Results stay hidden from the public page until you publish them.')}
+                  {t('Select one or more channels below, then run the probe. Results stay hidden until you publish them.')}
                 </p>
               </div>
               <div className='flex shrink-0 items-center gap-2'>
@@ -126,7 +181,7 @@ export function DegradationDetection() {
                   variant='outline'
                   size='sm'
                   onClick={refresh}
-                  disabled={listQuery.isFetching}
+                  disabled={listQuery.isFetching || groupsQuery.isFetching}
                 >
                   <RefreshCw className='size-3.5' aria-hidden='true' />
                   {t('Refresh')}
@@ -136,19 +191,89 @@ export function DegradationDetection() {
                   size='sm'
                   onClick={() => {
                     setRunMessage(null)
-                    runMutation.mutate()
+                    runMutation.mutate(selectedGroups)
                   }}
-                  disabled={busy}
+                  disabled={busy || selectedGroups.length === 0}
                 >
                   <Play className='size-3.5' aria-hidden='true' />
                   {busy ? t('Running probe...') : t('Run probe')}
                 </Button>
               </div>
             </div>
+
+            {/* Dynamic channel/group selection */}
+            <div className='border-b px-4 py-3 sm:px-5'>
+              <div className='mb-2 flex items-center justify-between gap-2'>
+                <span className='text-muted-foreground text-xs font-medium'>
+                  {t('Channels to probe')} ({selectedGroups.length}/{groups.length})
+                </span>
+                <div className='flex gap-3'>
+                  <button
+                    type='button'
+                    className='text-muted-foreground hover:text-foreground text-xs underline-offset-2 hover:underline'
+                    onClick={() => setSelectedGroups(groups.map((g) => g.group))}
+                    disabled={groups.length === 0 || busy}
+                  >
+                    {t('Select all')}
+                  </button>
+                  <button
+                    type='button'
+                    className='text-muted-foreground hover:text-foreground text-xs underline-offset-2 hover:underline'
+                    onClick={() => setSelectedGroups([])}
+                    disabled={selectedGroups.length === 0 || busy}
+                  >
+                    {t('Clear')}
+                  </button>
+                </div>
+              </div>
+              {groupsQuery.isLoading ? (
+                <div className='grid gap-2 sm:grid-cols-2 lg:grid-cols-3'>
+                  {Array.from({ length: 3 }).map((_, i) => (
+                    <Skeleton key={i} className='h-9 w-full rounded-md' />
+                  ))}
+                </div>
+              ) : groups.length === 0 ? (
+                <div className='text-muted-foreground rounded-md border border-dashed px-4 py-6 text-center text-xs'>
+                  {t('No channels available. Enable a channel first, then refresh.')}
+                </div>
+              ) : (
+                <div className='grid gap-2 sm:grid-cols-2 lg:grid-cols-3'>
+                  {groups.map((g) => (
+                    <Label
+                      key={g.group}
+                      className='hover:bg-accent flex cursor-pointer items-center gap-2 rounded-md border px-3 py-2 text-xs font-normal'
+                    >
+                      <Checkbox
+                        checked={selectedGroups.includes(g.group)}
+                        onCheckedChange={(checked) => toggleGroup(g.group, checked === true)}
+                        disabled={busy}
+                      />
+                      <span className='min-w-0 flex-1 truncate'>{g.group}</span>
+                      <Badge variant='outline' className='shrink-0 text-[10px]'>
+                        {g.channel_count} {t('channels')}
+                      </Badge>
+                      {g.published_count > 0 && (
+                        <span className='text-muted-foreground shrink-0 text-[10px]' title={t('Published')}>
+                          ✓{g.published_count}
+                        </span>
+                      )}
+                      {g.pending_count > 0 && (
+                        <span className='shrink-0 text-[10px] text-amber-600' title={t('Pending review')}>
+                          ●{g.pending_count}
+                        </span>
+                      )}
+                    </Label>
+                  ))}
+                </div>
+              )}
+            </div>
+
             {runMessage && (
-              <div className='border-b px-4 py-2.5 text-xs sm:px-5'>{runMessage}</div>
+              <div className={`border-b px-4 py-2.5 text-xs sm:px-5 ${runConflict ? 'text-amber-600' : ''}`}>
+                {runMessage}
+              </div>
             )}
-            {runMutation.isError && (
+            {runMutation.isError && !runConflict && (
               <div className='text-destructive border-b px-4 py-2.5 text-xs sm:px-5'>
                 {runMutation.error instanceof Error
                   ? runMutation.error.message

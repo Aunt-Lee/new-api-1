@@ -134,17 +134,22 @@ func nextPelicanProbeTime(lastSuccessTs int64) time.Time {
 	return time.Unix(lastSuccessTs, 0).Add(pelicanProbeMinInterval + jitter)
 }
 
-// RunPelicanProbes runs one probe per target group and always stores a row
+// RunPelicanProbes runs one probe per requested group and always stores a row
 // (success or failure) so the UI can show the real outcome. It is also used by
 // the admin "run now" endpoint. Returns nil when a run is already in progress.
-func RunPelicanProbes(ctx context.Context) []model.PelicanTest {
+// When groups is empty it falls back to the configured default groups.
+func RunPelicanProbes(ctx context.Context, groups ...string) []model.PelicanTest {
 	if !pelicanProbeBusy.CompareAndSwap(false, true) {
 		return nil
 	}
 	defer pelicanProbeBusy.Store(false)
 
-	results := make([]model.PelicanTest, 0, len(pelicanProbeGroups))
-	for _, group := range pelicanProbeGroups {
+	targets := groups
+	if len(targets) == 0 {
+		targets = pelicanProbeGroups
+	}
+	results := make([]model.PelicanTest, 0, len(targets))
+	for _, group := range targets {
 		record := model.PelicanTest{
 			Group:     group,
 			ModelName: pelicanProbeModel,

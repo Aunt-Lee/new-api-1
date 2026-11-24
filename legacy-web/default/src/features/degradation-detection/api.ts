@@ -22,6 +22,7 @@ import type {
   AdminDegradationListResponse,
   DegradationActionResponse,
   DegradationRunResponse,
+  ProbeGroupsResponse,
 } from './types'
 
 // Admin management handles business errors locally instead of via global toast.
@@ -39,11 +40,20 @@ export async function listDegradationTests(): Promise<AdminDegradationListRespon
   return res.data
 }
 
-// Trigger one manual probe per target group. Results are stored as pending.
-export async function runDegradationTests(): Promise<DegradationRunResponse> {
+// List groups that currently have enabled channels (dynamic, refreshable).
+export async function listProbeGroups(): Promise<ProbeGroupsResponse> {
+  const res = await api.get<ProbeGroupsResponse>(
+    '/api/pelican-test/admin/groups',
+    actionConfig
+  )
+  return res.data
+}
+
+// Trigger a manual probe for the selected groups. Results are stored as pending.
+export async function runDegradationTests(groups: string[]): Promise<DegradationRunResponse> {
   const res = await api.post<DegradationRunResponse>(
     '/api/pelican-test/run',
-    {},
+    { groups },
     actionConfig
   )
   return res.data
