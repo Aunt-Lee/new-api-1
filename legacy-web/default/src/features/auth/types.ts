@@ -66,6 +66,13 @@ export interface LoginResponse {
   data?: {
     require_2fa?: boolean
     id?: number
+    // rc51 auth bundle — must be persisted so business APIs get a Bearer token
+    access_token?: string
+    token_type?: string
+    access_expires_at?: number
+    session?: unknown
+    user?: unknown
+    [key: string]: unknown
   }
 }
 

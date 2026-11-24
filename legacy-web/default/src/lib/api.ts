@@ -20,13 +20,20 @@ import axios, { type AxiosRequestConfig } from 'axios'
 import { t } from 'i18next'
 import { toast } from 'sonner'
 
-import { useAuthStore } from '@/stores/auth-store'
+import {
+  clearAuthentication,
+  getAccessToken,
+  getFreshAuthHeaders,
+  refreshAuthentication,
+} from '@/lib/auth-session'
 
 declare module 'axios' {
   export interface AxiosRequestConfig {
     skipBusinessError?: boolean
     skipErrorHandler?: boolean
     disableDuplicate?: boolean
+    skipAuthRefresh?: boolean
+    authRetry?: boolean
   }
 }
 
@@ -115,18 +122,40 @@ api.interceptors.response.use(
     }
     return response
   },
-  (error) => {
-    const skip = error?.config?.skipErrorHandler
+  async (error) => {
+    const config = error?.config as ApiRequestConfig | undefined
+    const skip = config?.skipErrorHandler
     const status = error?.response?.status
 
     if (status === 401) {
-      try {
-        useAuthStore.getState().auth.reset()
-      } catch {
-        /* empty */
-      }
-
-      if (!skip) {
+      if (config && !config.skipAuthRefresh && !config.authRetry) {
+        // First 401: try to mint a fresh access token from the refresh cookie,
+        // then replay the original request with the new Bearer token.
+        config.authRetry = true
+        const outcome = await refreshAuthentication()
+        if (outcome.kind === 'authenticated') {
+          const token = getAccessToken()
+          if (token) {
+            config.headers = {
+              ...config.headers,
+              Authorization: `Bearer ${token}`,
+            }
+          }
+          return api.request(config)
+        }
+        clearAuthentication()
+        if (!skip) {
+          toast.error(t('Session expired!'))
+        }
+      } else if (config?.authRetry) {
+        // Replay also failed: the session is genuinely unusable.
+        clearAuthentication()
+        if (!skip) {
+          toast.error(t('Session expired!'))
+        }
+      } else if (!skip) {
+        // skipAuthRefresh (one-time proof) — never clear the session or replay,
+        // just surface the error so the caller can restart the proof flow.
         toast.error(t('Session expired!'))
       }
     } else if (!skip) {
@@ -170,6 +199,12 @@ export function getCommonHeaders(): Record<string, string> {
     headers['New-Api-User'] = uid
   }
 
+  // rc51 authenticates business APIs via Bearer token only.
+  const accessToken = getAccessToken()
+  if (accessToken) {
+    headers.Authorization = `Bearer ${accessToken}`
+  }
+
   return headers
 }
 
@@ -177,12 +212,61 @@ export function getCommonHeaders(): Record<string, string> {
 // Request Interceptor
 // ============================================================================
 
-// Attach user ID header for all requests
-api.interceptors.request.use((config) => {
+/**
+ * Read a header from an axios request config, tolerating both plain objects
+ * and AxiosHeaders instances (which expose a `get` method).
+ */
+function readHeader(
+  headers: ApiRequestConfig['headers'],
+  name: string
+): string | undefined {
+  if (!headers) return undefined
+  const bag = headers as Record<string, unknown> & {
+    get?: (key: string) => unknown
+  }
+  const direct = bag[name] ?? bag[name.toLowerCase()]
+  if (typeof direct === 'string' || typeof direct === 'number') {
+    return String(direct)
+  }
+  const viaGet = bag.get?.(name)
+  return typeof viaGet === 'string' ? viaGet : undefined
+}
+
+/** Attach the rc51 Bearer token (and legacy user header) to every request. */
+api.interceptors.request.use(async (config) => {
   const uid = getUserId()
   if (uid) {
-    // Custom header for user identification
+    // Custom header kept for backward compatibility with the legacy UI.
     ;(config.headers as Record<string, string>)['New-Api-User'] = uid
+  }
+
+  const hasProof = Boolean(
+    readHeader(config.headers, 'X-Security-Proof')
+  )
+  if (hasProof) {
+    // A one-time proof cannot be replayed after a 401. Refresh up front so the
+    // first attempt carries a valid Bearer, and disable 401 replay below.
+    config.skipAuthRefresh = true
+    try {
+      const headers = await getFreshAuthHeaders()
+      for (const [name, value] of Object.entries(headers)) {
+        ;(config.headers as Record<string, string>)[name] = value
+      }
+    } catch {
+      // Keep the cached token (if any) and let the backend make the verdict.
+      const accessToken = getAccessToken()
+      if (accessToken) {
+        ;(config.headers as Record<string, string>).Authorization =
+          `Bearer ${accessToken}`
+      }
+    }
+    return config
+  }
+
+  const accessToken = getAccessToken()
+  if (accessToken) {
+    ;(config.headers as Record<string, string>).Authorization =
+      `Bearer ${accessToken}`
   }
   return config
 })

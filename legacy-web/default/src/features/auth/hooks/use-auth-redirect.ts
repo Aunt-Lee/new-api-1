@@ -21,6 +21,7 @@ import i18n from 'i18next'
 
 import type { User } from '@/features/users/types'
 import { normalizeInterfaceLanguage } from '@/i18n/languages'
+import { applyAuthBundle, isAuthBundle } from '@/lib/auth-session'
 import { getSelf } from '@/lib/api'
 import { useAuthStore } from '@/stores/auth-store'
 
@@ -44,6 +45,12 @@ function getSavedLanguage(user: User): string | undefined {
   }
 }
 
+function getLegacyUserId(value: unknown): number | undefined {
+  if (!value || typeof value !== 'object') return undefined
+  const id = (value as { id?: unknown }).id
+  return typeof id === 'number' ? id : undefined
+}
+
 /**
  * Hook for handling authentication redirects and user data management
  */
@@ -52,41 +59,58 @@ export function useAuthRedirect() {
   const { auth } = useAuthStore()
 
   /**
-   * Handle successful login
-   * @param userData - Optional user data from login response
+   * Handle a successful login.
+   *
+   * rc51 returns a full auth bundle (`access_token`, `session`, `user`) from
+   * every primary login transport. Persisting that bundle — BEFORE navigating
+   * — is what makes the authenticated route guard see a user and lets the
+   * follow-up `getSelf()` carry a Bearer token instead of failing with 401.
+   *
+   * The legacy `user`-only shape is still accepted as a fallback so older
+   * callers (sign-up / wechat / passkey) keep working.
+   *
+   * @param userData - Login response data (bundle or legacy user object)
    * @param redirectTo - Redirect path after login
    */
   const handleLoginSuccess = async (
-    userData?: { id?: number } | null,
+    userData?: unknown,
     redirectTo?: string
   ) => {
-    // Save user ID if available
-    if (userData?.id) {
-      saveUserId(userData.id)
-    }
-
-    // Fetch and set user data
-    try {
-      const self = await getSelf()
-      if (self?.success && self.data) {
-        const user = self.data as User
-        auth.setUser(user)
-
-        // Update user ID if not already set
-        if (user.id) {
-          saveUserId(user.id)
-        }
-
-        // Restore saved language preference
-        const savedLang = getSavedLanguage(user)
-        const normalizedLang = normalizeInterfaceLanguage(savedLang)
-        if (normalizedLang !== i18n.language) {
-          i18n.changeLanguage(normalizedLang)
-        }
+    if (isAuthBundle(userData)) {
+      applyAuthBundle(userData)
+      const savedLang = getSavedLanguage(userData.user as unknown as User)
+      const normalizedLang = normalizeInterfaceLanguage(savedLang)
+      if (normalizedLang && normalizedLang !== i18n.language) {
+        i18n.changeLanguage(normalizedLang)
       }
-    } catch (error) {
-      // eslint-disable-next-line no-console
-      console.error('Failed to fetch user data:', error)
+    } else {
+      // Legacy fallback: save id, then hydrate the user via getSelf()
+      // (which now sends the Bearer token from the persisted session).
+      const legacyId = getLegacyUserId(userData)
+      if (legacyId) {
+        saveUserId(legacyId)
+      }
+
+      try {
+        const self = await getSelf()
+        if (self?.success && self.data) {
+          const user = self.data as User
+          auth.setUser(user)
+
+          if (user.id) {
+            saveUserId(user.id)
+          }
+
+          const savedLang = getSavedLanguage(user)
+          const normalizedLang = normalizeInterfaceLanguage(savedLang)
+          if (normalizedLang && normalizedLang !== i18n.language) {
+            i18n.changeLanguage(normalizedLang)
+          }
+        }
+      } catch (error) {
+        // eslint-disable-next-line no-console
+        console.error('Failed to fetch user data:', error)
+      }
     }
 
     // Navigate to target page
