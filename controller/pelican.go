@@ -81,17 +81,28 @@ func GetProbeGroups(c *gin.Context) {
 }
 
 // RunPelicanTestsNow lets an administrator trigger a probe for the selected
-// groups. The request body may contain {"groups": ["Gpt Pro", ...]}; when
-// omitted, the configured default groups are used. Each run creates pending
-// results that must be reviewed before appearing on the public page.
+// (group, model) targets. The request body may contain
+// {"targets": [{"group": "Gpt Pro", "model": "gpt-6.1-sol"}, ...]}; the legacy
+// {"groups": ["Gpt Pro", ...]} form is still accepted and uses the default
+// probe model. When the body is empty the configured defaults are used. Each
+// run creates pending results that must be reviewed before going public.
 func RunPelicanTestsNow(c *gin.Context) {
 	var req struct {
-		Groups []string `json:"groups"`
+		Targets []service.ProbeTarget `json:"targets"`
+		Groups  []string              `json:"groups"`
 	}
 	// Body is optional: an empty body must not be treated as a bad request.
 	_ = c.ShouldBindJSON(&req)
 
-	results := service.RunPelicanProbes(c.Request.Context(), req.Groups...)
+	targets := req.Targets
+	if len(targets) == 0 && len(req.Groups) > 0 {
+		targets = make([]service.ProbeTarget, 0, len(req.Groups))
+		for _, group := range req.Groups {
+			targets = append(targets, service.ProbeTarget{Group: group})
+		}
+	}
+
+	results := service.RunPelicanProbes(c.Request.Context(), targets...)
 	if results == nil {
 		c.JSON(http.StatusConflict, gin.H{
 			"success": false,
@@ -105,10 +116,36 @@ func RunPelicanTestsNow(c *gin.Context) {
 	})
 }
 
-// ListPelicanTestsForAdmin returns recent results for every group, including
-// pending (unreviewed) ones, so an admin can review raw SVG before publishing.
+// ListPelicanTestsForAdmin returns recent results for every group that has an
+// enabled channel (dynamic, not the hardcoded defaults), including pending
+// (unreviewed) ones, so an admin can review raw SVG before publishing. Groups
+// with historical results but no enabled channel are included as well.
 func ListPelicanTestsForAdmin(c *gin.Context) {
-	rows, err := model.GetLatestPelicanTestsForAdmin(service.PelicanProbeGroups(), pelicanTestsPerGroup)
+	groupInfos, err := model.GetProbeGroups()
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"success": false, "message": err.Error()})
+		return
+	}
+	groups := make([]string, 0, len(groupInfos))
+	for _, info := range groupInfos {
+		groups = append(groups, info.Group)
+	}
+	extra, err := model.GetPelicanTestGroups()
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"success": false, "message": err.Error()})
+		return
+	}
+	seen := make(map[string]bool, len(groups))
+	for _, g := range groups {
+		seen[g] = true
+	}
+	for _, g := range extra {
+		if !seen[g] {
+			groups = append(groups, g)
+		}
+	}
+
+	rows, err := model.GetLatestPelicanTestsForAdmin(groups, pelicanTestsPerGroup)
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"success": false, "message": err.Error()})
 		return

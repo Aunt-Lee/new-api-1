@@ -134,38 +134,57 @@ func nextPelicanProbeTime(lastSuccessTs int64) time.Time {
 	return time.Unix(lastSuccessTs, 0).Add(pelicanProbeMinInterval + jitter)
 }
 
-// RunPelicanProbes runs one probe per requested group and always stores a row
+// ProbeTarget is one (group, model) pair selected in the admin UI. The group
+// decides which channel pool the relay picks from; the model is sent verbatim
+// in the request body so every enabled model can be checked independently.
+type ProbeTarget struct {
+	Group string `json:"group"`
+	Model string `json:"model"`
+}
+
+// RunPelicanProbes runs one probe per requested target and always stores a row
 // (success or failure) so the UI can show the real outcome. It is also used by
 // the admin "run now" endpoint. Returns nil when a run is already in progress.
-// When groups is empty it falls back to the configured default groups.
-func RunPelicanProbes(ctx context.Context, groups ...string) []model.PelicanTest {
+// An empty target list falls back to the configured default groups, each with
+// the default probe model (legacy behaviour).
+func RunPelicanProbes(ctx context.Context, targets ...ProbeTarget) []model.PelicanTest {
 	if !pelicanProbeBusy.CompareAndSwap(false, true) {
 		return nil
 	}
 	defer pelicanProbeBusy.Store(false)
 
-	targets := groups
 	if len(targets) == 0 {
-		targets = pelicanProbeGroups
+		targets = make([]ProbeTarget, 0, len(pelicanProbeGroups))
+		for _, group := range pelicanProbeGroups {
+			targets = append(targets, ProbeTarget{Group: group, Model: pelicanProbeModel})
+		}
 	}
 	results := make([]model.PelicanTest, 0, len(targets))
-	for _, group := range targets {
+	for _, target := range targets {
+		group := strings.TrimSpace(target.Group)
+		modelName := strings.TrimSpace(target.Model)
+		if group == "" {
+			continue
+		}
+		if modelName == "" {
+			modelName = pelicanProbeModel
+		}
 		record := model.PelicanTest{
 			Group:     group,
-			ModelName: pelicanProbeModel,
+			ModelName: modelName,
 			Status:    model.PelicanTestStatusInvalid,
 			Pending:   true,
 		}
-		svg, err := requestPelicanSVG(ctx, group)
+		svg, err := requestPelicanSVG(ctx, group, modelName)
 		if err != nil {
 			record.FailReason = clipPelicanReason(err.Error())
-			common.SysLog(fmt.Sprintf("pelican probe [%s] failed: %v", group, err))
+			common.SysLog(fmt.Sprintf("pelican probe [%s/%s] failed: %v", group, modelName, err))
 		} else {
 			record.Content = svg
 			record.Status = model.PelicanTestStatusSuccess
 		}
 		if err := model.InsertPelicanTest(&record); err != nil {
-			common.SysError(fmt.Sprintf("pelican probe [%s]: failed to store result: %v", group, err))
+			common.SysError(fmt.Sprintf("pelican probe [%s/%s]: failed to store result: %v", group, modelName, err))
 		}
 		results = append(results, record)
 	}
@@ -174,15 +193,19 @@ func RunPelicanProbes(ctx context.Context, groups ...string) []model.PelicanTest
 
 // requestPelicanSVG goes through the real relay chain (TokenAuth -> Distribute
 // -> Relay -> billing/log) by calling our own /v1/chat/completions endpoint
-// with a dedicated token bound to the target group.
-func requestPelicanSVG(ctx context.Context, group string) (string, error) {
+// with a dedicated token bound to the target group. modelName is the model the
+// admin selected; the group on the token still scopes the channel pool.
+func requestPelicanSVG(ctx context.Context, group string, modelName string) (string, error) {
 	token, err := ensurePelicanProbeToken(group)
 	if err != nil {
 		return "", err
 	}
+	if modelName == "" {
+		modelName = pelicanProbeModel
+	}
 
 	payload, err := common.Marshal(map[string]any{
-		"model": pelicanProbeModel,
+		"model": modelName,
 		"messages": []map[string]string{
 			{"role": "user", "content": pelicanProbePrompt},
 		},

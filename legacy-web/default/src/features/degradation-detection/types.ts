@@ -17,18 +17,27 @@ along with this program. If not, see <https://www.gnu.org/licenses/>.
 For commercial licensing, please contact support@quantumnous.com
 */
 
-// A selectable probe target: a group with at least one enabled channel.
+// A selectable probe target: a group with at least one enabled channel, plus
+// the distinct enabled models in that group. Admins pick one or more models
+// under a group; the group still decides which channel pool serves the probe.
 export interface ProbeGroup {
   group: string
   channel_count: number
   published_count: number
   pending_count: number
+  models: string[]
 }
 
 export interface ProbeGroupsResponse {
   success: boolean
   message?: string
   data: ProbeGroup[]
+}
+
+// One (group, model) pair sent to the run endpoint.
+export interface ProbeTarget {
+  group: string
+  model: string
 }
 
 // One degradation-probe result as seen from the admin review page.

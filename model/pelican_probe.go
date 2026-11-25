@@ -11,10 +11,14 @@ const (
 // channel, together with its review state. The admin page uses this to build
 // the selectable probe target list dynamically instead of a hardcoded list.
 type ProbeGroupInfo struct {
-	Group          string `json:"group"`
-	ChannelCount   int64  `json:"channel_count"`
-	PublishedCount int64  `json:"published_count"`
-	PendingCount   int64  `json:"pending_count"`
+	Group          string   `json:"group"`
+	ChannelCount   int64    `json:"channel_count"`
+	PublishedCount int64    `json:"published_count"`
+	PendingCount   int64    `json:"pending_count"`
+	// Models are the distinct enabled models available in this group. The admin
+	// page uses them to offer model-level probe targets instead of a hardcoded
+	// single model, while the group still decides which channel pool is used.
+	Models []string `json:"models"`
 }
 
 // GetProbeGroups returns every group with at least one enabled channel plus a
@@ -52,10 +56,36 @@ func GetProbeGroups() ([]ProbeGroupInfo, error) {
 	for _, s := range stats {
 		byGroup[s.Group] = s
 	}
+
+	// Attach the enabled models for each group. One query for all groups keeps
+	// the admin page responsive even with many channels.
+	type modelRow struct {
+		Group string `gorm:"column:group_name"`
+		Model string `gorm:"column:model"`
+	}
+	var modelRows []modelRow
+	if err := DB.Table("abilities").
+		Where("enabled = ?", true).
+		Select(commonGroupCol + " AS group_name, model").
+		Group(commonGroupCol + ", model").
+		Order("model").
+		Scan(&modelRows).Error; err != nil {
+		return nil, err
+	}
+	modelsByGroup := make(map[string][]string, len(groups))
+	for _, r := range modelRows {
+		modelsByGroup[r.Group] = append(modelsByGroup[r.Group], r.Model)
+	}
+
 	for i := range groups {
 		if s, ok := byGroup[groups[i].Group]; ok {
 			groups[i].PublishedCount = s.PublishedCount
 			groups[i].PendingCount = s.PendingCount
+		}
+		if m, ok := modelsByGroup[groups[i].Group]; ok {
+			groups[i].Models = m
+		} else {
+			groups[i].Models = []string{}
 		}
 	}
 	return groups, nil
@@ -85,6 +115,18 @@ type PelicanTest struct {
 
 func (PelicanTest) TableName() string {
 	return "pelican_tests"
+}
+
+// GetPelicanTestGroups returns every group that already has stored probe
+// results. Used by the admin review list so results for a group whose channels
+// were later disabled remain reviewable and publishable.
+func GetPelicanTestGroups() ([]string, error) {
+	var groups []string
+	err := DB.Model(&PelicanTest{}).
+		Distinct().
+		Order(commonGroupCol).
+		Pluck(commonGroupCol, &groups).Error
+	return groups, err
 }
 
 func InsertPelicanTest(record *PelicanTest) error {
