@@ -51,12 +51,18 @@ const (
 	pelicanProbeRetryCooldown = time.Hour
 	pelicanProbeRetention     = 30 * 24 * time.Hour
 	pelicanProbeMaxSVG        = 200 << 10
+	// Reasoning models (e.g. DeepSeek) can spend the whole 4096-token budget on
+	// internal thinking and leave message.content empty ("relay returned an
+	// empty completion"). Give them room to emit the SVG after thinking; a
+	// plain model still only uses ~4k tokens, so this is safe for everyone.
+	pelicanProbeMaxTokens = 16384
 	// A single probe used to allow 3 minutes, so a handful of targets blocked
 	// the HTTP handler for many minutes and the browser/gateway timed out
-	// (502). Cap both the per-request wait and the whole task budget, and run
-	// targets with bounded concurrency.
-	pelicanProbeHTTPTimeout  = 75 * time.Second
-	pelicanProbeTaskDeadline = 10 * time.Minute
+	// (502). Probes are now async, so a longer per-request cap is safe: the
+	// HTTP handler still returns immediately and the whole task keeps its own
+	// deadline. A reasoning model may need ~3 minutes for 16384 tokens.
+	pelicanProbeHTTPTimeout   = 180 * time.Second
+	pelicanProbeTaskDeadline  = 10 * time.Minute
 	pelicanProbeMaxConcurrent = 4
 )
 
@@ -323,7 +329,7 @@ func requestPelicanSVG(ctx context.Context, group string, modelName string) (str
 			{"role": "user", "content": pelicanProbePrompt},
 		},
 		"temperature": 0.7,
-		"max_tokens":  4096,
+		"max_tokens":  pelicanProbeMaxTokens,
 	})
 	if err != nil {
 		return "", err
