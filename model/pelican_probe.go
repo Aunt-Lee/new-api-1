@@ -156,6 +156,48 @@ func GetLatestPelicanTestsForAdmin(groups []string, perGroup int) ([]PelicanTest
 	return getPelicanTestsByPublishState(groups, perGroup, true)
 }
 
+// GetAdminReviewablePelicanTests returns ALL pending rows (so a large probe
+// run can never hide unreviewed results) plus a bounded number of recent
+// published rows per group. This is the admin review page's data source; the
+// public page keeps using GetLatestPelicanTests with its small per-group cap.
+func GetAdminReviewablePelicanTests(groups []string, publishedPerGroup int, maxPending int) ([]PelicanTest, error) {
+	if publishedPerGroup <= 0 {
+		publishedPerGroup = 4
+	}
+	if maxPending <= 0 {
+		maxPending = 500
+	}
+	result := make([]PelicanTest, 0, len(groups)*publishedPerGroup+maxPending)
+
+	// Pending first, newest first. Cap only as a safety valve at a generous
+	// bound; normal runs are far below it.
+	var pending []PelicanTest
+	if err := DB.Model(&PelicanTest{}).
+		Where("pending = ?", true).
+		Order("created_at DESC").
+		Order("id DESC").
+		Limit(maxPending).
+		Find(&pending).Error; err != nil {
+		return nil, err
+	}
+	result = append(result, pending...)
+
+	// Recent published rows per group (legacy NULL pending counts as published).
+	for _, group := range groups {
+		var rows []PelicanTest
+		if err := DB.Model(&PelicanTest{}).
+			Where(commonGroupCol+" = ? AND (pending = ? OR pending IS NULL)", group, false).
+			Order("created_at DESC").
+			Order("id DESC").
+			Limit(publishedPerGroup).
+			Find(&rows).Error; err != nil {
+			return nil, err
+		}
+		result = append(result, rows...)
+	}
+	return result, nil
+}
+
 // publishedFilter selects published rows when includePending is false. NULL is
 // accepted as published for smooth upgrade of historical rows.
 func getPelicanTestsByPublishState(groups []string, perGroup int, includePending bool) ([]PelicanTest, error) {
@@ -191,16 +233,27 @@ func GetPelicanTestByID(id int) (*PelicanTest, error) {
 	return &row, nil
 }
 
-// PublishPelicanTest marks a pending result as published (pending=false) so it
-// becomes visible on the public pricing page.
-func PublishPelicanTest(id int) error {
-	return DB.Model(&PelicanTest{}).Where("id = ?", id).Update("pending", false).Error
+// PublishPelicanTest marks a pending, successful result as published
+// (pending=false) so it becomes visible on the public pricing page. Failed
+// results and rows already published are rejected (RowsAffected == 0).
+func PublishPelicanTest(id int) (bool, error) {
+	res := DB.Model(&PelicanTest{}).
+		Where("id = ? AND pending = ? AND status = ?", id, true, PelicanTestStatusSuccess).
+		Update("pending", false)
+	if res.Error != nil {
+		return false, res.Error
+	}
+	return res.RowsAffected > 0, nil
 }
 
-// DeletePelicanTest removes a result permanently (used to discard a pending
-// probe that the admin does not want to publish).
-func DeletePelicanTest(id int) error {
-	return DB.Where("id = ?", id).Delete(&PelicanTest{}).Error
+// DeletePelicanTest permanently removes a pending result the admin rejects.
+// Already-published rows are protected (RowsAffected == 0).
+func DeletePelicanTest(id int) (bool, error) {
+	res := DB.Where("id = ? AND pending = ?", id, true).Delete(&PelicanTest{})
+	if res.Error != nil {
+		return false, res.Error
+	}
+	return res.RowsAffected > 0, nil
 }
 
 // GetLatestSuccessfulPelicanTestTime returns the timestamp of the most recent

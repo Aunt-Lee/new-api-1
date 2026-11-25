@@ -18,7 +18,7 @@ For commercial licensing, please contact support@quantumnous.com
 */
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { Play, RefreshCw } from 'lucide-react'
-import { useEffect, useMemo, useState } from 'react'
+import { useEffect, useMemo, useRef, useState } from 'react'
 import { useTranslation } from 'react-i18next'
 
 import { SectionPageLayout } from '@/components/layout'
@@ -39,6 +39,7 @@ import { useAuthStore } from '@/stores/auth-store'
 
 import {
   discardDegradationTest,
+  getProbeTaskStatus,
   listDegradationTests,
   listProbeGroups,
   publishDegradationTest,
@@ -49,10 +50,12 @@ import type {
   AdminDegradationTest,
   ProbeGroup,
   ProbeTarget,
+  ProbeTaskStatus,
 } from './types'
 
 const QUERY_KEY = ['degradation-detection', 'list']
 const GROUPS_KEY = ['degradation-detection', 'groups']
+const TASK_KEY = ['degradation-detection', 'task']
 
 export function DegradationDetection() {
   const { t } = useTranslation()
@@ -60,10 +63,10 @@ export function DegradationDetection() {
   const role = useAuthStore((state) => state.auth.user?.role ?? ROLE.GUEST)
   const [runMessage, setRunMessage] = useState<string | null>(null)
   const [runConflict, setRunConflict] = useState(false)
-  // group -> selected model names. A group present in the map is "enabled";
-  // an empty array means the group is shown but nothing is selected yet.
+  const [actionMessage, setActionMessage] = useState<string | null>(null)
+  // group -> selected model names. Nothing is selected by default: a run can
+  // take minutes, so the admin must deliberately choose targets first.
   const [selection, setSelection] = useState<Record<string, string[]>>({})
-  const [initialized, setInitialized] = useState(false)
   const [openGroups, setOpenGroups] = useState<string[]>([])
 
   const listQuery = useQuery({
@@ -94,58 +97,86 @@ export function DegradationDetection() {
 
   const groups: ProbeGroup[] = groupsQuery.data ?? []
 
-  // On first successful load, default-select every model in every group.
-  // Later refreshes keep the admin's choices but drop models/groups that no
-  // longer exist, and auto-select any newly added ones.
+  // Keep the admin's choices in sync with the channel configuration: drop
+  // groups/models that no longer exist. Never default-select — an accidental
+  // "Run probe" on all 55 models would take a very long time.
   useEffect(() => {
     if (groups.length === 0 || groupsQuery.isLoading) return
     setSelection((prev) => {
-      if (!initialized) {
-        const initial: Record<string, string[]> = {}
-        for (const g of groups) initial[g.group] = [...g.models]
-        return initial
-      }
       const next: Record<string, string[]> = {}
       for (const g of groups) {
-        if (!(g.group in prev)) {
-          // Brand-new group: default-select all of its models.
-          next[g.group] = [...g.models]
-          continue
-        }
-        // Existing group: keep exactly the admin's picks, dropping models that
-        // no longer exist. Do not re-select models they deliberately unchecked.
         const valid = new Set(g.models)
         next[g.group] = (prev[g.group] ?? []).filter((m) => valid.has(m))
       }
       return next
     })
-    setInitialized(true)
-  }, [groupsQuery.data, groupsQuery.isLoading, initialized])
+  }, [groupsQuery.data, groupsQuery.isLoading])
 
   const refresh = () => {
     void queryClient.invalidateQueries({ queryKey: QUERY_KEY })
     void queryClient.invalidateQueries({ queryKey: GROUPS_KEY })
+    void queryClient.invalidateQueries({ queryKey: TASK_KEY })
   }
+
+  // Poll the background task while it is running. Results are refreshed once
+  // when the task reaches a terminal state.
+  const taskQuery = useQuery({
+    queryKey: TASK_KEY,
+    queryFn: async (): Promise<ProbeTaskStatus> => {
+      const res = await getProbeTaskStatus()
+      if (!res.success) throw new Error(res.message || t('Could not read task status.'))
+      return res.data
+    },
+    refetchInterval: (query) => (query.state.data?.status === 'running' ? 2500 : false),
+    staleTime: 0,
+    retry: false,
+  })
+
+  const task = taskQuery.data
+  const taskRunning = task?.status === 'running'
+  const lastDoneId = useRef<string | null>(null)
+  useEffect(() => {
+    if (!task) return
+    if (task.status === 'done' && task.task_id && lastDoneId.current !== task.task_id) {
+      lastDoneId.current = task.task_id
+      setRunConflict(false)
+      setRunMessage(
+        t('Probe finished: {{succeeded}} succeeded, {{failed}} failed. Review the results below.', {
+          succeeded: task.succeeded,
+          failed: task.failed,
+        })
+      )
+      refresh()
+    }
+  }, [task])
 
   const runMutation = useMutation({
     mutationFn: (targets: ProbeTarget[]) => runDegradationTests(targets),
     onSuccess: (res) => {
       setRunConflict(false)
-      setRunMessage(
-        res.success
-          ? t('Probe finished. Review the new results below, then publish the ones you approve.')
-          : res.message || t('Probe failed.')
-      )
-      refresh()
+      if (res.success && res.data?.status === 'running') {
+        setRunMessage(
+          t('Probe started ({{total}} targets). This runs in the background — you can wait here or come back later.', {
+            total: res.data.total,
+          })
+        )
+      } else {
+        setRunMessage(res.message || t('Probe failed.'))
+      }
+      void queryClient.invalidateQueries({ queryKey: TASK_KEY })
     },
     onError: (err: unknown) => {
-      // 409 means a probe is still running on the server (e.g. triggered from
-      // another tab). Show a friendly notice instead of a scary raw error.
-      const axiosErr = err as { response?: { status?: number; data?: { message?: string } } }
+      const axiosErr = err as {
+        response?: { status?: number; data?: { message?: string; retry_after?: number } }
+      }
       if (axiosErr?.response?.status === 409) {
         setRunConflict(true)
-        setRunMessage(t('A probe is already running. Wait for it to finish, then try again.'))
-        refresh()
+        setRunMessage(
+          t('A probe is already running. Try again in about {{seconds}} seconds.', {
+            seconds: axiosErr.response.data?.retry_after ?? 30,
+          })
+        )
+        void queryClient.invalidateQueries({ queryKey: TASK_KEY })
         return
       }
       setRunConflict(false)
@@ -155,11 +186,23 @@ export function DegradationDetection() {
 
   const publishMutation = useMutation({
     mutationFn: (id: number) => publishDegradationTest(id),
-    onSuccess: refresh,
+    onSuccess: () => {
+      setActionMessage(null)
+      refresh()
+    },
+    onError: (err: unknown) => {
+      setActionMessage(err instanceof Error ? err.message : t('Could not publish result.'))
+    },
   })
   const discardMutation = useMutation({
     mutationFn: (id: number) => discardDegradationTest(id),
-    onSuccess: refresh,
+    onSuccess: () => {
+      setActionMessage(null)
+      refresh()
+    },
+    onError: (err: unknown) => {
+      setActionMessage(err instanceof Error ? err.message : t('Could not discard result.'))
+    },
   })
 
   // Derive the flat target list from the current selection.
@@ -190,7 +233,7 @@ export function DegradationDetection() {
   const rows: AdminDegradationTest[] = listQuery.data ?? []
   const pending = rows.filter((r) => r.pending)
   const published = rows.filter((r) => !r.pending)
-  const busy = runMutation.isPending
+  const busy = runMutation.isPending || taskRunning
 
   const selectedModelCount = (group: ProbeGroup) => selection[group.group]?.length ?? 0
   const isGroupFullySelected = (group: ProbeGroup) =>
@@ -268,7 +311,9 @@ export function DegradationDetection() {
                   disabled={busy || targets.length === 0}
                 >
                   <Play className='size-3.5' aria-hidden='true' />
-                  {busy ? t('Running probe...') : t('Run probe')}
+                  {taskRunning && task
+                    ? t('Running {{done}}/{{total}}', { done: task.completed, total: task.total })
+                    : t('Run probe')}
                 </Button>
               </div>
             </div>
@@ -384,6 +429,16 @@ export function DegradationDetection() {
               )}
             </div>
 
+            {taskRunning && task && task.total > 0 && (
+              <div className='border-b px-4 py-2.5 sm:px-5'>
+                <div className='bg-muted h-1.5 w-full overflow-hidden rounded-full'>
+                  <div
+                    className='bg-primary h-full rounded-full transition-all'
+                    style={{ width: `${Math.round((task.completed / task.total) * 100)}%` }}
+                  />
+                </div>
+              </div>
+            )}
             {runMessage && (
               <div className={`border-b px-4 py-2.5 text-xs sm:px-5 ${runConflict ? 'text-amber-600' : ''}`}>
                 {runMessage}
@@ -394,6 +449,11 @@ export function DegradationDetection() {
                 {runMutation.error instanceof Error
                   ? runMutation.error.message
                   : t('Probe failed.')}
+              </div>
+            )}
+            {actionMessage && (
+              <div className='text-destructive border-b px-4 py-2.5 text-xs sm:px-5'>
+                {actionMessage}
               </div>
             )}
           </section>

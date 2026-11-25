@@ -58,10 +58,30 @@ export interface AdminDegradationListResponse {
   data: AdminDegradationTest[]
 }
 
+// Snapshot of the background probe task returned by /run (202) and
+// /admin/run/status. Status: idle | running | done.
+export interface ProbeTaskStatus {
+  task_id: string
+  status: 'idle' | 'running' | 'done'
+  total: number
+  completed: number
+  succeeded: number
+  failed: number
+  started_at: number
+  finished_at?: number
+}
+
 export interface DegradationRunResponse {
   success: boolean
   message?: string
-  data?: AdminDegradationTest[]
+  data?: ProbeTaskStatus
+  retry_after?: number
+}
+
+export interface ProbeTaskStatusResponse {
+  success: boolean
+  message?: string
+  data: ProbeTaskStatus
 }
 
 export interface DegradationActionResponse {

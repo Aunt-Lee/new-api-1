@@ -36,6 +36,7 @@ func SetApiRouter(router *gin.Engine) {
 		{
 			adminPelicanRoute.GET("/list", controller.ListPelicanTestsForAdmin)
 			adminPelicanRoute.GET("/groups", controller.GetProbeGroups)
+			adminPelicanRoute.GET("/run/status", controller.GetPelicanProbeRunStatus)
 			adminPelicanRoute.POST("/publish/:id", controller.PublishPelicanTest)
 			adminPelicanRoute.POST("/discard/:id", controller.DiscardPelicanTest)
 		}

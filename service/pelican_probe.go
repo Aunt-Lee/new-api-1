@@ -13,6 +13,7 @@ import (
 	"regexp"
 	"strconv"
 	"strings"
+	"sync"
 	"sync/atomic"
 	"time"
 
@@ -50,7 +51,13 @@ const (
 	pelicanProbeRetryCooldown = time.Hour
 	pelicanProbeRetention     = 30 * 24 * time.Hour
 	pelicanProbeMaxSVG        = 200 << 10
-	pelicanProbeHTTPTimeout   = 3 * time.Minute
+	// A single probe used to allow 3 minutes, so a handful of targets blocked
+	// the HTTP handler for many minutes and the browser/gateway timed out
+	// (502). Cap both the per-request wait and the whole task budget, and run
+	// targets with bounded concurrency.
+	pelicanProbeHTTPTimeout  = 75 * time.Second
+	pelicanProbeTaskDeadline = 10 * time.Minute
+	pelicanProbeMaxConcurrent = 4
 )
 
 var (
@@ -62,7 +69,38 @@ var (
 	// client (proxy settings / SSRF dialer would otherwise interfere).
 	pelicanProbeHTTPClient = &http.Client{Timeout: pelicanProbeHTTPTimeout}
 	pelicanSVGPattern      = regexp.MustCompile(`(?is)<svg\b.*</svg>`)
+
+	// Async task state. probeTaskStateMu guards every field of probeTaskState;
+	// the task itself is immutable after creation except through this mutex.
+	probeTaskStateMu sync.RWMutex
+	probeTaskState   = PelicanProbeTaskStatus{Status: "idle"}
 )
+
+// PelicanProbeTaskStatus is the public, JSON-safe snapshot of the current
+// admin-triggered probe task. Status is one of idle|running|done.
+type PelicanProbeTaskStatus struct {
+	TaskID     string `json:"task_id"`
+	Status     string `json:"status"`
+	Total      int    `json:"total"`
+	Completed  int    `json:"completed"`
+	Succeeded  int    `json:"succeeded"`
+	Failed     int    `json:"failed"`
+	StartedAt  int64  `json:"started_at"`
+	FinishedAt int64  `json:"finished_at,omitempty"`
+}
+
+// GetPelicanProbeTaskStatus returns a snapshot of the current probe task.
+func GetPelicanProbeTaskStatus() PelicanProbeTaskStatus {
+	probeTaskStateMu.RLock()
+	defer probeTaskStateMu.RUnlock()
+	return probeTaskState
+}
+
+func setProbeTaskState(update func(*PelicanProbeTaskStatus)) {
+	probeTaskStateMu.Lock()
+	defer probeTaskStateMu.Unlock()
+	update(&probeTaskState)
+}
 
 // PelicanProbeGroups returns a copy of the groups covered by the probe, so
 // the public read endpoint and the scheduler always agree on the group list.
@@ -142,16 +180,17 @@ type ProbeTarget struct {
 	Model string `json:"model"`
 }
 
-// RunPelicanProbes runs one probe per requested target and always stores a row
-// (success or failure) so the UI can show the real outcome. It is also used by
-// the admin "run now" endpoint. Returns nil when a run is already in progress.
-// An empty target list falls back to the configured default groups, each with
-// the default probe model (legacy behaviour).
-func RunPelicanProbes(ctx context.Context, targets ...ProbeTarget) []model.PelicanTest {
+// StartPelicanProbes starts an admin-triggered probe task in the background and
+// returns immediately, so the HTTP handler never waits for slow upstreams.
+// Returns (status, false) when a task is already running.
+//
+// The task uses its own context with a hard deadline: detaching from the
+// request context means a browser/gateway timeout can no longer cancel the
+// remaining targets, and the deadline bounds a stuck upstream.
+func StartPelicanProbes(targets ...ProbeTarget) (PelicanProbeTaskStatus, bool) {
 	if !pelicanProbeBusy.CompareAndSwap(false, true) {
-		return nil
+		return GetPelicanProbeTaskStatus(), false
 	}
-	defer pelicanProbeBusy.Store(false)
 
 	if len(targets) == 0 {
 		targets = make([]ProbeTarget, 0, len(pelicanProbeGroups))
@@ -159,36 +198,110 @@ func RunPelicanProbes(ctx context.Context, targets ...ProbeTarget) []model.Pelic
 			targets = append(targets, ProbeTarget{Group: group, Model: pelicanProbeModel})
 		}
 	}
-	results := make([]model.PelicanTest, 0, len(targets))
+
+	taskID := fmt.Sprintf("probe-%d", common.GetTimestamp())
+	setProbeTaskState(func(s *PelicanProbeTaskStatus) {
+		*s = PelicanProbeTaskStatus{
+			TaskID:    taskID,
+			Status:    "running",
+			Total:     len(targets),
+			StartedAt: common.GetTimestamp(),
+		}
+	})
+
+	go runPelicanProbeTask(targets)
+	return GetPelicanProbeTaskStatus(), true
+}
+
+// runPelicanProbeTask executes the targets with bounded concurrency. It owns
+// the pelicanProbeBusy flag for its whole lifetime and always publishes a
+// terminal status, so a client can poll for completion.
+func runPelicanProbeTask(targets []ProbeTarget) {
+	defer pelicanProbeBusy.Store(false)
+
+	ctx, cancel := context.WithTimeout(context.Background(), pelicanProbeTaskDeadline)
+	defer cancel()
+
+	sem := make(chan struct{}, pelicanProbeMaxConcurrent)
+	var wg sync.WaitGroup
 	for _, target := range targets {
-		group := strings.TrimSpace(target.Group)
-		modelName := strings.TrimSpace(target.Model)
-		if group == "" {
-			continue
+		select {
+		case <-ctx.Done():
+			// Task budget exhausted; skip the rest instead of creating rows
+			// that would all fail with "context canceled".
+			common.SysError("pelican probe: task deadline reached, skipping remaining targets")
+			break
+		case sem <- struct{}{}:
 		}
-		if modelName == "" {
-			modelName = pelicanProbeModel
+		if ctx.Err() != nil {
+			break
 		}
-		record := model.PelicanTest{
-			Group:     group,
-			ModelName: modelName,
-			Status:    model.PelicanTestStatusInvalid,
-			Pending:   true,
-		}
-		svg, err := requestPelicanSVG(ctx, group, modelName)
-		if err != nil {
-			record.FailReason = clipPelicanReason(err.Error())
-			common.SysLog(fmt.Sprintf("pelican probe [%s/%s] failed: %v", group, modelName, err))
-		} else {
-			record.Content = svg
-			record.Status = model.PelicanTestStatusSuccess
-		}
-		if err := model.InsertPelicanTest(&record); err != nil {
-			common.SysError(fmt.Sprintf("pelican probe [%s/%s]: failed to store result: %v", group, modelName, err))
-		}
-		results = append(results, record)
+		wg.Add(1)
+		go func(t ProbeTarget) {
+			defer wg.Done()
+			defer func() { <-sem }()
+			runOnePelicanProbe(ctx, t)
+		}(target)
 	}
-	return results
+	wg.Wait()
+
+	setProbeTaskState(func(s *PelicanProbeTaskStatus) {
+		if s.TaskID == "" {
+			return
+		}
+		if s.Status == "running" {
+			s.Status = "done"
+			s.FinishedAt = common.GetTimestamp()
+		}
+	})
+	common.SysLog(fmt.Sprintf("pelican probe: task finished: %+v", GetPelicanProbeTaskStatus()))
+}
+
+// runOnePelicanProbe performs a single (group, model) probe and stores the row
+// whether it succeeded or failed, then advances the task counters.
+func runOnePelicanProbe(ctx context.Context, target ProbeTarget) {
+	group := strings.TrimSpace(target.Group)
+	modelName := strings.TrimSpace(target.Model)
+	if group == "" {
+		setProbeTaskState(func(s *PelicanProbeTaskStatus) { s.Failed++; s.Completed++ })
+		return
+	}
+	if modelName == "" {
+		modelName = pelicanProbeModel
+	}
+	record := model.PelicanTest{
+		Group:     group,
+		ModelName: modelName,
+		Status:    model.PelicanTestStatusInvalid,
+		Pending:   true,
+	}
+	svg, err := requestPelicanSVG(ctx, group, modelName)
+	if err != nil {
+		record.FailReason = clipPelicanReason(err.Error())
+		common.SysLog(fmt.Sprintf("pelican probe [%s/%s] failed: %v", group, modelName, err))
+	} else {
+		record.Content = svg
+		record.Status = model.PelicanTestStatusSuccess
+	}
+	storeErr := model.InsertPelicanTest(&record)
+	if storeErr != nil {
+		common.SysError(fmt.Sprintf("pelican probe [%s/%s]: failed to store result: %v", group, modelName, storeErr))
+	}
+	setProbeTaskState(func(s *PelicanProbeTaskStatus) {
+		s.Completed++
+		if record.Status == model.PelicanTestStatusSuccess && storeErr == nil {
+			s.Succeeded++
+		} else {
+			s.Failed++
+		}
+	})
+}
+
+// RunPelicanProbes is kept for the legacy scheduler call site (which is a
+// no-op today). Admin triggers go through StartPelicanProbes instead.
+func RunPelicanProbes(ctx context.Context, targets ...ProbeTarget) []model.PelicanTest {
+	StartPelicanProbes(targets...)
+	return nil
 }
 
 // requestPelicanSVG goes through the real relay chain (TokenAuth -> Distribute
@@ -336,9 +449,12 @@ func extractPelicanSVG(raw string) (string, error) {
 
 func clipPelicanReason(s string) string {
 	s = strings.Join(strings.Fields(s), " ")
-	const limit = 250
-	if len(s) <= limit {
+	const limitChars = 250
+	// Slice by runes so a cut in the middle of a multi-byte character cannot
+	// produce invalid UTF-8 (upstream errors are often in Chinese).
+	runes := []rune(s)
+	if len(runes) <= limitChars {
 		return s
 	}
-	return s[:limit]
+	return string(runes[:limitChars])
 }
