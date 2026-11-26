@@ -10,9 +10,70 @@ import (
 	"github.com/tidwall/gjson"
 )
 
-// PublicMessage never uses diagnostic text: internal errors remain available
-// for retry decisions, billing rules and administrator logs.
+// hiddenPublicErrorKeywords is a case-insensitive deny-list. If any of these
+// substrings is present in an error, the whole error content is withheld from
+// end users and replaced by a generic message. Internal diagnostics remain
+// available for retry decisions, billing rules and administrator logs.
+var hiddenPublicErrorKeywords = []string{"billing", "balance", "influence"}
+
+// ContainsHiddenPublicKeyword reports whether text carries a protected keyword
+// (billing/balance/influence, case-insensitive). Exported for other layers that
+// surface error text to users, such as the user-facing log view.
+func ContainsHiddenPublicKeyword(text string) bool {
+	return containsHiddenPublicKeyword(text)
+}
+
+// containsHiddenPublicKeyword reports whether text carries a protected keyword
+// (case-insensitive).
+func containsHiddenPublicKeyword(text string) bool {
+	if text == "" {
+		return false
+	}
+	lower := strings.ToLower(text)
+	for _, keyword := range hiddenPublicErrorKeywords {
+		if strings.Contains(lower, keyword) {
+			return true
+		}
+	}
+	return false
+}
+
+// publicRawMessage returns the diagnostic text safe to expose. WithOpenAIError
+// appends the raw upstream metadata ("<msg> (<metadata json>)") to the relay
+// message for admin diagnostics; that metadata is internal and is stripped
+// here so it is never surfaced to end users.
+func publicRawMessage(e *NewAPIError) string {
+	if e == nil {
+		return ""
+	}
+	msg := e.ToOpenAIError().Message
+	if len(e.Metadata) > 0 {
+		suffix := " (" + string(e.Metadata) + ")"
+		msg = strings.TrimSuffix(msg, suffix)
+	}
+	return msg
+}
+
+// PublicMessage returns the real diagnostic text to end users. It is withheld
+// only when the message carries a protected keyword or is empty; internal
+// errors remain available for retry decisions, billing rules and admin logs.
 func (e *NewAPIError) PublicMessage() string {
+	if e == nil {
+		return "Internal server error"
+	}
+	raw := publicRawMessage(e)
+	if containsHiddenPublicKeyword(raw) || containsHiddenPublicKeyword(e.Error()) {
+		return e.genericPublicMessage()
+	}
+	if raw == "" {
+		return e.genericPublicMessage()
+	}
+	return raw
+}
+
+// genericPublicMessage is the safe fallback used when public error content is
+// withheld.
+func (e *NewAPIError) genericPublicMessage() string {
 	if e == nil {
 		return "Internal server error"
 	}
@@ -82,11 +143,33 @@ func publicErrorIdentifier(value string) string {
 	return value
 }
 
+// exposesProtectedKeyword checks every raw field that may be surfaced to a
+// user, before identifier sanitization can strip suspicious characters.
+func exposesProtectedKeyword(err OpenAIError) bool {
+	if containsHiddenPublicKeyword(err.Message) {
+		return true
+	}
+	if containsHiddenPublicKeyword(err.Type) || containsHiddenPublicKeyword(err.Param) {
+		return true
+	}
+	switch code := err.Code.(type) {
+	case string:
+		return containsHiddenPublicKeyword(code)
+	case ErrorCode:
+		return containsHiddenPublicKeyword(string(code))
+	}
+	return false
+}
+
 func (e *NewAPIError) ToPublicOpenAIError(requestID string) OpenAIError {
 	var result OpenAIError
 	if e != nil {
 		result = e.ToOpenAIError()
+		result.Message = publicRawMessage(e)
 	}
+	// Inspect the raw error (including fields other than the message) before
+	// sanitizing. A protected keyword anywhere hides the entire error.
+	hideAll := exposesProtectedKeyword(result) || containsHiddenPublicKeyword(e.Error())
 	result.Message = e.PublicMessage()
 	if requestID = publicErrorIdentifier(requestID); requestID != "" {
 		result.Message = common.MessageWithRequestId(result.Message, requestID)
@@ -106,6 +189,15 @@ func (e *NewAPIError) ToPublicOpenAIError(requestID string) OpenAIError {
 		result.Code = "upstream_error"
 	}
 	result.Metadata = nil
+	if hideAll {
+		result.Message = e.genericPublicMessage()
+		if requestID != "" {
+			result.Message = common.MessageWithRequestId(result.Message, requestID)
+		}
+		result.Type = "upstream_error"
+		result.Param = ""
+		result.Code = "upstream_error"
+	}
 	return result
 }
 
@@ -116,7 +208,7 @@ func (e *NewAPIError) ToPublicClaudeError(requestID string) ClaudeError {
 	}
 	result.Message = e.ToPublicOpenAIError(requestID).Message
 	result.Type = publicErrorIdentifier(result.Type)
-	if result.Type == "" {
+	if result.Type == "" || containsHiddenPublicKeyword(result.Type) {
 		result.Type = "api_error"
 	}
 	return result

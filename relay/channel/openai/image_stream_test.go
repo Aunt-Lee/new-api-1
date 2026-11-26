@@ -167,10 +167,9 @@ func TestOpenaiImageStreamHandlerRecordsUpstreamErrorEvent(t *testing.T) {
 	require.Equal(t, 1, info.StreamStatus.TotalErrorCount())
 	require.Contains(t, info.StreamStatus.Errors[0].Message, "INTERNAL_ERROR")
 	// The scanner strips the upstream "event: error" line; the event name is
-	// rebuilt from the JSON type; diagnostics remain internal only.
+	// rebuilt from the JSON type; real diagnostics are now public.
 	assert.Contains(t, recorder.Body.String(), `event: upstream_error`)
-	assert.Contains(t, recorder.Body.String(), `Upstream request failed`)
-	assert.NotContains(t, recorder.Body.String(), `stream ID 77`)
-	assert.NotContains(t, recorder.Body.String(), `INTERNAL_ERROR`)
+	assert.Contains(t, recorder.Body.String(), "\u4e0a\u6e38\u9519\u8bef")
+	assert.Contains(t, recorder.Body.String(), `INTERNAL_ERROR`)
 	assert.Contains(t, info.StreamStatus.Errors[0].Message, "\u4e0a\u6e38\u9519\u8bef")
 }

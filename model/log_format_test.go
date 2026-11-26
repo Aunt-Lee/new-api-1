@@ -1,6 +1,7 @@
 package model
 
 import (
+	"strings"
 	"testing"
 
 	"github.com/QuantumNous/new-api/common"
@@ -35,15 +36,31 @@ func TestFormatUserLogsStripsQuotaSaturation(t *testing.T) {
 	require.Contains(t, parsed, "model_price")
 }
 
-func TestUserErrorLogsHideHistoricalDiagnostics(t *testing.T) {
+func TestUserErrorLogsShowRealMessage(t *testing.T) {
 	other := common.MapToJsonStr(map[string]interface{}{
 		"error_type": "upstream_error", "error_code": "rate_limit_exceeded", "status_code": 429,
 		"admin_info": map[string]interface{}{"upstream_error": "\u4e0a\u6e38\u9650\u6d41"},
 	})
 	logs := []*Log{{Type: LogTypeError, Content: "\u4e0a\u6e38\u9650\u6d41", Other: other}, {Type: LogTypeConsume, Content: "billing details"}}
 	formatUserLogs(logs, 0)
-	assert.Equal(t, "Upstream rate limit exceeded", logs[0].Content)
-	assert.NotContains(t, logs[0].Other, "upstream_error\":")
+	// Non-sensitive error text is now shown to users.
+	assert.Equal(t, "\u4e0a\u6e38\u9650\u6d41", logs[0].Content)
 	assert.NotContains(t, logs[0].Other, "admin_info")
+	// Non-error logs are untouched.
 	assert.Equal(t, "billing details", logs[1].Content)
+}
+
+func TestUserErrorLogsHideProtectedKeywords(t *testing.T) {
+	other := common.MapToJsonStr(map[string]interface{}{
+		"error_type": "upstream_error", "error_code": "billing_error", "status_code": 402,
+	})
+	logs := []*Log{{Type: LogTypeError, Content: "Your BILLING limit reached", Other: other}}
+	formatUserLogs(logs, 0)
+	lower := strings.ToLower(logs[0].Content)
+	assert.NotContains(t, lower, "billing")
+	assert.NotContains(t, lower, "balance")
+	assert.NotContains(t, lower, "influence")
+	parsed, err := common.StrToMap(logs[0].Other)
+	require.NoError(t, err)
+	assert.Equal(t, "upstream_error", parsed["error_code"])
 }

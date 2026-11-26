@@ -23,7 +23,9 @@ func TestIOCopySanitizesErrorsAndRecalculatesContentLength(t *testing.T) {
 	IOCopyBytesGracefully(c, resp, data)
 	assert.Equal(t, 429, recorder.Code)
 	assert.Equal(t, strconv.Itoa(recorder.Body.Len()), recorder.Header().Get("Content-Length"))
-	assert.Contains(t, recorder.Body.String(), "Upstream rate limit exceeded (request id: req_123)")
+	// Real diagnostic text is now public; only structural fields are stripped.
+	assert.Contains(t, recorder.Body.String(), "\u4e0a\u6e38\u9650\u6d41")
+	assert.Contains(t, recorder.Body.String(), "request id: req_123")
 	assert.NotContains(t, recorder.Body.String(), "private")
 	var envelope map[string]any
 	require.NoError(t, common.Unmarshal(recorder.Body.Bytes(), &envelope))
@@ -34,7 +36,9 @@ func TestPublicConversionPreservesViolationDetection(t *testing.T) {
 	err := types.WithOpenAIError(types.OpenAIError{Message: "\u8fdd\u89c4: " + CSAMViolationMarker}, 400)
 	assert.True(t, HasCSAMViolationMarker(err))
 	public := err.ToPublicOpenAIError("req_123")
-	assert.NotContains(t, public.Message, CSAMViolationMarker)
+	// Public errors now expose real diagnostic text (no protected keyword is
+	// present here), while violation detection on the internal error is intact.
+	assert.Contains(t, public.Message, CSAMViolationMarker)
 	assert.True(t, HasCSAMViolationMarker(err))
 	normalized := NormalizeViolationFeeError(err)
 	require.NotNil(t, normalized)

@@ -23,9 +23,9 @@ func TestForcedStreamFormattingPreservesPublicError(t *testing.T) {
 		helper.SetEventStreamHeaders(c)
 		data := `{"error":{"message":"\u4e0a\u6e38\u9519\u8bef","code":"rate_limit_exceeded"}}`
 		require.NoError(t, sendStreamData(c, &relaycommon.RelayInfo{}, data, true, thinking))
-		assert.Contains(t, recorder.Body.String(), "Upstream rate limit exceeded")
+		// Real diagnostic text is now public.
+		assert.Contains(t, recorder.Body.String(), "\u4e0a\u6e38\u9519\u8bef")
 		assert.Contains(t, recorder.Body.String(), `"error":`)
-		assert.NotContains(t, recorder.Body.String(), `\u4e0a`)
 	}
 }
 
@@ -67,8 +67,8 @@ func TestRealtimePublicErrorsDoNotChangeClientMessages(t *testing.T) {
 	_, message, err := client.ReadMessage()
 	require.NoError(t, err)
 	require.NoError(t, <-result)
-	assert.Contains(t, string(message), "Upstream rate limit exceeded (request id: req_123)")
+	assert.Contains(t, string(message), "\u4e0a\u6e38\u9519\u8bef")
+	assert.Contains(t, string(message), "request id: req_123")
 	assert.Contains(t, string(message), `"event_id":"evt_1"`)
 	assert.NotContains(t, string(message), "private")
-	assert.NotContains(t, string(message), `\u4e0a`)
 }

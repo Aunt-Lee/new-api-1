@@ -119,8 +119,10 @@ func formatUserLogs(logs []*Log, startIdx int) {
 		var otherMap map[string]interface{}
 		otherMap, _ = common.StrToMap(logs[i].Other)
 		if logs[i].Type == LogTypeError {
-			// Sanitize only user views, including historical logs. Administrator
-			// queries retain the original stored diagnostics without a migration.
+			// User views show the real stored error message, including historical
+			// logs. Administrator queries are untouched. If the message or any
+			// exposed error field carries a protected keyword, hide the whole
+			// entry with a generic message instead.
 			publicError := types.OpenAIError{}
 			statusCode := 500
 			if otherMap != nil {
@@ -130,11 +132,28 @@ func formatUserLogs(logs []*Log, startIdx int) {
 					statusCode = int(status)
 				}
 			}
-			publicError = types.WithOpenAIError(publicError, statusCode).ToPublicOpenAIError("")
-			logs[i].Content = publicError.Message
-			if otherMap != nil {
-				otherMap["error_type"] = publicError.Type
-				otherMap["error_code"] = publicError.Code
+			publicError.Message = logs[i].Content
+			hide := types.ContainsHiddenPublicKeyword(logs[i].Content)
+			if !hide {
+				for _, field := range []string{publicError.Type, fmt.Sprint(publicError.Code)} {
+					if types.ContainsHiddenPublicKeyword(field) {
+						hide = true
+						break
+					}
+				}
+			}
+			if hide {
+				withErr := types.WithOpenAIError(publicError, statusCode)
+				logs[i].Content = withErr.ToPublicOpenAIError("").Message
+				if otherMap != nil {
+					otherMap["error_type"] = "upstream_error"
+					otherMap["error_code"] = "upstream_error"
+				}
+			} else if otherMap != nil {
+				// Reuse the identifier sanitizer for the machine-readable fields.
+				cleaned := types.WithOpenAIError(publicError, statusCode).ToPublicOpenAIError("")
+				otherMap["error_type"] = cleaned.Type
+				otherMap["error_code"] = cleaned.Code
 			}
 		}
 		if otherMap != nil {

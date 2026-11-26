@@ -29,8 +29,8 @@ func TestWritePublicRelayErrorRespectsResponseProtocol(t *testing.T) {
 				}
 				original := types.NewErrorWithStatusCode(errors.New("\u4e0a\u6e38\u9519\u8bef"), types.ErrorCodeInvalidRequest, 400)
 				WritePublicRelayError(c, format, original)
-				assert.Contains(t, recorder.Body.String(), "Invalid request (request id: req_123)")
-				assert.NotContains(t, recorder.Body.String(), "\u4e0a\u6e38\u9519\u8bef")
+				assert.Contains(t, recorder.Body.String(), "\u4e0a\u6e38\u9519\u8bef")
+				assert.Contains(t, recorder.Body.String(), "request id: req_123")
 				assert.Equal(t, "\u4e0a\u6e38\u9519\u8bef", original.Error())
 				if started {
 					assert.Equal(t, 200, recorder.Code)
@@ -69,9 +69,10 @@ func TestStreamOutputHelpersSanitizeOnlyErrors(t *testing.T) {
 			case "responses":
 				require.NoError(t, ResponseChunkData(c, dto.ResponsesStreamResponse{Type: "error"}, data))
 			}
-			assert.Contains(t, recorder.Body.String(), "Upstream rate limit exceeded (request id: req_123)")
+			assert.Contains(t, recorder.Body.String(), "\u9519\u8bef")
+			assert.Contains(t, recorder.Body.String(), "request id: req_123")
 			assert.NotContains(t, recorder.Body.String(), "private")
-			assert.NotContains(t, recorder.Body.String(), `\u9519`)
+			assert.NotContains(t, recorder.Body.String(), `detail`)
 		})
 	}
 }
