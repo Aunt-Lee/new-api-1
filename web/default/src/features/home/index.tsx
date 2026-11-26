@@ -55,6 +55,10 @@ import { Separator } from '@/components/ui/separator'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import { getPricing } from '@/features/pricing/api'
 import { QUOTA_TYPE_VALUES } from '@/features/pricing/constants'
+import {
+  parseTiersFromExpr,
+  splitBillingExprAndRequestRules,
+} from '@/features/pricing/lib/billing-expr'
 import { getModelPricingCurrencyDisplay } from '@/features/pricing/lib/display-currency'
 import type { PricingModel } from '@/features/pricing/types'
 import { getPublicPlans } from '@/features/subscriptions/api'
@@ -293,6 +297,28 @@ function getConfiguredOutputPriceUSD(model: PricingModel): number | null {
   return Number.isFinite(value) && value > 0 ? value : null
 }
 
+/**
+ * Official (provider-published) prices are configured in the backend through
+ * `billing_expr`, where the `p` and `c` coefficients of the base tier carry the
+ * real $/1M input and output prices (see pkg/billingexpr/expr.md). Read them
+ * with the same parser the pricing page uses instead of deriving from the
+ * site's own model_ratio, which is a separate multiplier and can drift.
+ */
+function getOfficialPricesFromExpr(
+  model: PricingModel
+): { input: number; output: number } | null {
+  if (model.billing_mode !== 'tiered_expr' || !model.billing_expr) return null
+  const { billingExpr } = splitBillingExprAndRequestRules(model.billing_expr)
+  const tier = parseTiersFromExpr(billingExpr)[0]
+  if (!tier) return null
+  const input = Number(tier.inputPrice)
+  const output = Number(tier.outputPrice)
+  if (!hasNumber(input) || input <= 0 || !hasNumber(output) || output <= 0) {
+    return null
+  }
+  return { input, output }
+}
+
 function formatOfficialPrice(value: number | null, language?: string): string {
   if (!hasNumber(value) || value <= 0) return '-'
   return formatPrice(value, language)
@@ -472,10 +498,19 @@ export function Home() {
         )
         const configuredInputPrice = getConfiguredInputPriceUSD(model)
         const configuredOutputPrice = getConfiguredOutputPriceUSD(model)
+        // Official price source of truth (priority):
+        //   1. explicit front-end override in model-pricing-config.ts
+        //   2. backend billing_expr p/c coefficients (real provider prices)
+        //   3. model_ratio-derived fallback (legacy models without an expr)
+        const exprOfficial = getOfficialPricesFromExpr(model)
         const officialInputPrice =
-          configItem.officialInputPrice ?? configuredInputPrice
+          configItem.officialInputPrice ??
+          exprOfficial?.input ??
+          configuredInputPrice
         const officialOutputPrice =
-          configItem.officialOutputPrice ?? configuredOutputPrice
+          configItem.officialOutputPrice ??
+          exprOfficial?.output ??
+          configuredOutputPrice
         const minimumDiscount =
           inputPriceRange && hasNumber(officialInputPrice)
             ? getDiscountPercent(inputPriceRange.min, officialInputPrice)
