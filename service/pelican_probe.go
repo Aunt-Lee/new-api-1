@@ -60,9 +60,13 @@ const (
 	// the HTTP handler for many minutes and the browser/gateway timed out
 	// (502). Probes are now async, so a longer per-request cap is safe: the
 	// HTTP handler still returns immediately and the whole task keeps its own
-	// deadline. A reasoning model may need ~3 minutes for 20000 tokens.
-	pelicanProbeHTTPTimeout   = 180 * time.Second
-	pelicanProbeTaskDeadline  = 10 * time.Minute
+	// deadline. Reasoning models (e.g. gpt-6.1-sol) may need 3-6 minutes to
+	// emit 20000 tokens; a 3-minute cap aborted otherwise-successful probes
+	// with "Client.Timeout exceeded while awaiting headers". Allow 8 minutes
+	// per request and give the whole task 12 minutes so multiple targets can
+	// run in bounded batches without the task deadline firing first.
+	pelicanProbeHTTPTimeout   = 480 * time.Second
+	pelicanProbeTaskDeadline  = 12 * time.Minute
 	pelicanProbeMaxConcurrent = 4
 )
 
