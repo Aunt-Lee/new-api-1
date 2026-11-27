@@ -17,18 +17,27 @@ along with this program. If not, see <https://www.gnu.org/licenses/>.
 For commercial licensing, please contact support@quantumnous.com
 */
 
-// A selectable probe target: a group with at least one enabled channel.
+// A selectable probe target: a group with at least one enabled channel, plus
+// the distinct enabled models in that group. Admins pick one or more models
+// under a group; the group still decides which channel pool serves the probe.
 export interface ProbeGroup {
   group: string
   channel_count: number
   published_count: number
   pending_count: number
+  models: string[]
 }
 
 export interface ProbeGroupsResponse {
   success: boolean
   message?: string
   data: ProbeGroup[]
+}
+
+// One (group, model) pair sent to the run endpoint.
+export interface ProbeTarget {
+  group: string
+  model: string
 }
 
 // One degradation-probe result as seen from the admin review page.
@@ -49,10 +58,30 @@ export interface AdminDegradationListResponse {
   data: AdminDegradationTest[]
 }
 
+// Snapshot of the background probe task returned by /run (202) and
+// /admin/run/status. Status: idle | running | done.
+export interface ProbeTaskStatus {
+  task_id: string
+  status: 'idle' | 'running' | 'done'
+  total: number
+  completed: number
+  succeeded: number
+  failed: number
+  started_at: number
+  finished_at?: number
+}
+
 export interface DegradationRunResponse {
   success: boolean
   message?: string
-  data?: AdminDegradationTest[]
+  data?: ProbeTaskStatus
+  retry_after?: number
+}
+
+export interface ProbeTaskStatusResponse {
+  success: boolean
+  message?: string
+  data: ProbeTaskStatus
 }
 
 export interface DegradationActionResponse {

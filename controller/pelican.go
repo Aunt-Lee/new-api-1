@@ -80,35 +80,100 @@ func GetProbeGroups(c *gin.Context) {
 	c.JSON(http.StatusOK, gin.H{"success": true, "data": groups})
 }
 
-// RunPelicanTestsNow lets an administrator trigger a probe for the selected
-// groups. The request body may contain {"groups": ["Gpt Pro", ...]}; when
-// omitted, the configured default groups are used. Each run creates pending
-// results that must be reviewed before appearing on the public page.
+// RunPelicanTestsNow starts an admin-triggered probe task and returns
+// immediately with 202 + a task snapshot. The task runs in the background with
+// bounded concurrency; poll GET /admin/run/status for progress. Each result is
+// stored as pending until an admin publishes it.
+//
+// Request body: {"targets": [{"group":"Gpt Pro","model":"gpt-6.1-sol"}, ...]}.
+// The legacy {"groups": [...]} form is still accepted (default probe model).
+// A malformed JSON body or an empty target list is a 400 — it must never
+// silently trigger the slow default probe run.
 func RunPelicanTestsNow(c *gin.Context) {
 	var req struct {
-		Groups []string `json:"groups"`
+		Targets []service.ProbeTarget `json:"targets"`
+		Groups  []string              `json:"groups"`
 	}
-	// Body is optional: an empty body must not be treated as a bad request.
-	_ = c.ShouldBindJSON(&req)
-
-	results := service.RunPelicanProbes(c.Request.Context(), req.Groups...)
-	if results == nil {
-		c.JSON(http.StatusConflict, gin.H{
+	if err := c.ShouldBindJSON(&req); err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{
 			"success": false,
-			"message": "a model degradation probe is already running",
+			"message": "invalid request body",
 		})
 		return
 	}
-	c.JSON(http.StatusOK, gin.H{
+
+	targets := req.Targets
+	if len(targets) == 0 && len(req.Groups) > 0 {
+		targets = make([]service.ProbeTarget, 0, len(req.Groups))
+		for _, group := range req.Groups {
+			targets = append(targets, service.ProbeTarget{Group: group})
+		}
+	}
+	if len(targets) == 0 {
+		c.JSON(http.StatusBadRequest, gin.H{
+			"success": false,
+			"message": "no probe targets selected",
+		})
+		return
+	}
+
+	status, started := service.StartPelicanProbes(targets...)
+	if !started {
+		c.JSON(http.StatusConflict, gin.H{
+			"success":    false,
+			"message":    "a model degradation probe is already running",
+			"retry_after": 30,
+			"data":       status,
+		})
+		return
+	}
+	c.JSON(http.StatusAccepted, gin.H{
 		"success": true,
-		"data":    results,
+		"message": "probe task started",
+		"data":    status,
 	})
 }
 
-// ListPelicanTestsForAdmin returns recent results for every group, including
-// pending (unreviewed) ones, so an admin can review raw SVG before publishing.
+// GetPelicanProbeRunStatus returns the current probe task status so the admin
+// UI can show progress instead of blindly retrying on a timeout.
+func GetPelicanProbeRunStatus(c *gin.Context) {
+	c.Header("Cache-Control", "no-store")
+	c.JSON(http.StatusOK, gin.H{
+		"success": true,
+		"data":    service.GetPelicanProbeTaskStatus(),
+	})
+}
+
+// ListPelicanTestsForAdmin returns recent results for every group that has an
+// enabled channel (dynamic, not the hardcoded defaults), including pending
+// (unreviewed) ones, so an admin can review raw SVG before publishing. Groups
+// with historical results but no enabled channel are included as well.
 func ListPelicanTestsForAdmin(c *gin.Context) {
-	rows, err := model.GetLatestPelicanTestsForAdmin(service.PelicanProbeGroups(), pelicanTestsPerGroup)
+	groupInfos, err := model.GetProbeGroups()
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"success": false, "message": err.Error()})
+		return
+	}
+	groups := make([]string, 0, len(groupInfos))
+	for _, info := range groupInfos {
+		groups = append(groups, info.Group)
+	}
+	extra, err := model.GetPelicanTestGroups()
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"success": false, "message": err.Error()})
+		return
+	}
+	seen := make(map[string]bool, len(groups))
+	for _, g := range groups {
+		seen[g] = true
+	}
+	for _, g := range extra {
+		if !seen[g] {
+			groups = append(groups, g)
+		}
+	}
+
+	rows, err := model.GetAdminReviewablePelicanTests(groups, pelicanTestsPerGroup, 500)
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"success": false, "message": err.Error()})
 		return
@@ -138,8 +203,16 @@ func PublishPelicanTest(c *gin.Context) {
 		c.JSON(http.StatusBadRequest, gin.H{"success": false, "message": "invalid id"})
 		return
 	}
-	if err := model.PublishPelicanTest(id); err != nil {
+	ok, err := model.PublishPelicanTest(id)
+	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"success": false, "message": err.Error()})
+		return
+	}
+	if !ok {
+		c.JSON(http.StatusConflict, gin.H{
+			"success": false,
+			"message": "only a pending, successful result can be published",
+		})
 		return
 	}
 	c.JSON(http.StatusOK, gin.H{"success": true})
@@ -152,8 +225,16 @@ func DiscardPelicanTest(c *gin.Context) {
 		c.JSON(http.StatusBadRequest, gin.H{"success": false, "message": "invalid id"})
 		return
 	}
-	if err := model.DeletePelicanTest(id); err != nil {
+	ok, err := model.DeletePelicanTest(id)
+	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"success": false, "message": err.Error()})
+		return
+	}
+	if !ok {
+		c.JSON(http.StatusConflict, gin.H{
+			"success": false,
+			"message": "only a pending result can be discarded",
+		})
 		return
 	}
 	c.JSON(http.StatusOK, gin.H{"success": true})

@@ -18,30 +18,44 @@ For commercial licensing, please contact support@quantumnous.com
 */
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { Play, RefreshCw } from 'lucide-react'
-import { useEffect, useState } from 'react'
+import { useEffect, useMemo, useRef, useState } from 'react'
 import { useTranslation } from 'react-i18next'
 
 import { SectionPageLayout } from '@/components/layout'
+import {
+  Accordion,
+  AccordionContent,
+  AccordionItem,
+  AccordionTrigger,
+} from '@/components/ui/accordion'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import { Checkbox } from '@/components/ui/checkbox'
 import { Label } from '@/components/ui/label'
 import { Skeleton } from '@/components/ui/skeleton'
 import { ROLE } from '@/lib/roles'
+import { cn } from '@/lib/utils'
 import { useAuthStore } from '@/stores/auth-store'
 
 import {
   discardDegradationTest,
+  getProbeTaskStatus,
   listDegradationTests,
   listProbeGroups,
   publishDegradationTest,
   runDegradationTests,
 } from './api'
 import { DegradationResultCard } from './components/result-card'
-import type { AdminDegradationTest, ProbeGroup } from './types'
+import type {
+  AdminDegradationTest,
+  ProbeGroup,
+  ProbeTarget,
+  ProbeTaskStatus,
+} from './types'
 
 const QUERY_KEY = ['degradation-detection', 'list']
 const GROUPS_KEY = ['degradation-detection', 'groups']
+const TASK_KEY = ['degradation-detection', 'task']
 
 export function DegradationDetection() {
   const { t } = useTranslation()
@@ -49,7 +63,11 @@ export function DegradationDetection() {
   const role = useAuthStore((state) => state.auth.user?.role ?? ROLE.GUEST)
   const [runMessage, setRunMessage] = useState<string | null>(null)
   const [runConflict, setRunConflict] = useState(false)
-  const [selectedGroups, setSelectedGroups] = useState<string[]>([])
+  const [actionMessage, setActionMessage] = useState<string | null>(null)
+  // group -> selected model names. Nothing is selected by default: a run can
+  // take minutes, so the admin must deliberately choose targets first.
+  const [selection, setSelection] = useState<Record<string, string[]>>({})
+  const [openGroups, setOpenGroups] = useState<string[]>([])
 
   const listQuery = useQuery({
     queryKey: QUERY_KEY,
@@ -77,45 +95,88 @@ export function DegradationDetection() {
     retry: false,
   })
 
-  // Default-select every group on first load; refresh keeps existing choices
-  // but drops ones that no longer have an enabled channel.
+  const groups: ProbeGroup[] = groupsQuery.data ?? []
+
+  // Keep the admin's choices in sync with the channel configuration: drop
+  // groups/models that no longer exist. Never default-select — an accidental
+  // "Run probe" on all 55 models would take a very long time.
   useEffect(() => {
-    const available = groupsQuery.data ?? []
-    if (available.length === 0) {
-      setSelectedGroups([])
-      return
-    }
-    setSelectedGroups((prev) => {
-      const valid = available.map((g) => g.group)
-      const kept = prev.filter((g) => valid.includes(g))
-      return prev.length === 0 || kept.length === 0 ? valid : kept
+    if (groups.length === 0 || groupsQuery.isLoading) return
+    setSelection((prev) => {
+      const next: Record<string, string[]> = {}
+      for (const g of groups) {
+        const valid = new Set(g.models)
+        next[g.group] = (prev[g.group] ?? []).filter((m) => valid.has(m))
+      }
+      return next
     })
-  }, [groupsQuery.data])
+  }, [groupsQuery.data, groupsQuery.isLoading])
 
   const refresh = () => {
     void queryClient.invalidateQueries({ queryKey: QUERY_KEY })
     void queryClient.invalidateQueries({ queryKey: GROUPS_KEY })
+    void queryClient.invalidateQueries({ queryKey: TASK_KEY })
   }
 
-  const runMutation = useMutation({
-    mutationFn: (groups: string[]) => runDegradationTests(groups),
-    onSuccess: (res) => {
+  // Poll the background task while it is running. Results are refreshed once
+  // when the task reaches a terminal state.
+  const taskQuery = useQuery({
+    queryKey: TASK_KEY,
+    queryFn: async (): Promise<ProbeTaskStatus> => {
+      const res = await getProbeTaskStatus()
+      if (!res.success) throw new Error(res.message || t('Could not read task status.'))
+      return res.data
+    },
+    refetchInterval: (query) => (query.state.data?.status === 'running' ? 2500 : false),
+    staleTime: 0,
+    retry: false,
+  })
+
+  const task = taskQuery.data
+  const taskRunning = task?.status === 'running'
+  const lastDoneId = useRef<string | null>(null)
+  useEffect(() => {
+    if (!task) return
+    if (task.status === 'done' && task.task_id && lastDoneId.current !== task.task_id) {
+      lastDoneId.current = task.task_id
       setRunConflict(false)
       setRunMessage(
-        res.success
-          ? t('Probe finished. Review the new results below, then publish the ones you approve.')
-          : res.message || t('Probe failed.')
+        t('Probe finished: {{succeeded}} succeeded, {{failed}} failed. Review the results below.', {
+          succeeded: task.succeeded,
+          failed: task.failed,
+        })
       )
       refresh()
+    }
+  }, [task])
+
+  const runMutation = useMutation({
+    mutationFn: (targets: ProbeTarget[]) => runDegradationTests(targets),
+    onSuccess: (res) => {
+      setRunConflict(false)
+      if (res.success && res.data?.status === 'running') {
+        setRunMessage(
+          t('Probe started ({{total}} targets). This runs in the background — you can wait here or come back later.', {
+            total: res.data.total,
+          })
+        )
+      } else {
+        setRunMessage(res.message || t('Probe failed.'))
+      }
+      void queryClient.invalidateQueries({ queryKey: TASK_KEY })
     },
     onError: (err: unknown) => {
-      // 409 means a probe is still running on the server (e.g. triggered from
-      // another tab). Show a friendly notice instead of a scary raw error.
-      const axiosErr = err as { response?: { status?: number; data?: { message?: string } } }
+      const axiosErr = err as {
+        response?: { status?: number; data?: { message?: string; retry_after?: number } }
+      }
       if (axiosErr?.response?.status === 409) {
         setRunConflict(true)
-        setRunMessage(t('A probe is already running. Wait for it to finish, then try again.'))
-        refresh()
+        setRunMessage(
+          t('A probe is already running. Try again in about {{seconds}} seconds.', {
+            seconds: axiosErr.response.data?.retry_after ?? 30,
+          })
+        )
+        void queryClient.invalidateQueries({ queryKey: TASK_KEY })
         return
       }
       setRunConflict(false)
@@ -125,12 +186,38 @@ export function DegradationDetection() {
 
   const publishMutation = useMutation({
     mutationFn: (id: number) => publishDegradationTest(id),
-    onSuccess: refresh,
+    onSuccess: () => {
+      setActionMessage(null)
+      refresh()
+    },
+    onError: (err: unknown) => {
+      setActionMessage(err instanceof Error ? err.message : t('Could not publish result.'))
+    },
   })
   const discardMutation = useMutation({
     mutationFn: (id: number) => discardDegradationTest(id),
-    onSuccess: refresh,
+    onSuccess: () => {
+      setActionMessage(null)
+      refresh()
+    },
+    onError: (err: unknown) => {
+      setActionMessage(err instanceof Error ? err.message : t('Could not discard result.'))
+    },
   })
+
+  // Derive the flat target list from the current selection.
+  const targets = useMemo<ProbeTarget[]>(() => {
+    const result: ProbeTarget[] = []
+    for (const [group, models] of Object.entries(selection)) {
+      for (const model of models) result.push({ group, model })
+    }
+    return result
+  }, [selection])
+
+  const totalModels = useMemo(
+    () => groups.reduce((sum, g) => sum + g.models.length, 0),
+    [groups]
+  )
 
   if (role < ROLE.ADMIN) {
     return (
@@ -146,17 +233,45 @@ export function DegradationDetection() {
   const rows: AdminDegradationTest[] = listQuery.data ?? []
   const pending = rows.filter((r) => r.pending)
   const published = rows.filter((r) => !r.pending)
-  const busy = runMutation.isPending
-  const groups: ProbeGroup[] = groupsQuery.data ?? []
+  const busy = runMutation.isPending || taskRunning
 
-  const toggleGroup = (group: string, checked: boolean) => {
-    setSelectedGroups((prev) =>
-      checked ? [...prev, group] : prev.filter((g) => g !== group)
-    )
+  const selectedModelCount = (group: ProbeGroup) => selection[group.group]?.length ?? 0
+  const isGroupFullySelected = (group: ProbeGroup) =>
+    group.models.length > 0 && selectedModelCount(group) === group.models.length
+
+  const toggleModel = (group: string, model: string, checked: boolean) => {
+    setSelection((prev) => {
+      const current = prev[group] ?? []
+      const next = checked
+        ? [...new Set([...current, model])]
+        : current.filter((m) => m !== model)
+      return { ...prev, [group]: next }
+    })
+  }
+
+  const setGroupModels = (group: ProbeGroup, checked: boolean) => {
+    setSelection((prev) => ({
+      ...prev,
+      [group.group]: checked ? [...group.models] : [],
+    }))
+  }
+
+  const selectAll = () => {
+    const next: Record<string, string[]> = {}
+    for (const g of groups) next[g.group] = [...g.models]
+    setSelection(next)
+  }
+
+  const clearAll = () => {
+    const next: Record<string, string[]> = {}
+    for (const g of groups) next[g.group] = []
+    setSelection(next)
   }
 
   return (
-    <SectionPageLayout fixedContent>
+    // NOTE: no `fixedContent`. The content area must scroll so admins can see
+    // every result card; `fixedContent` maps to overflow-hidden and clips them.
+    <SectionPageLayout>
       <SectionPageLayout.Title>
         <span className='inline-flex min-w-0 items-center gap-2'>
           <span className='truncate'>{t('Degradation Detection')}</span>
@@ -172,7 +287,7 @@ export function DegradationDetection() {
               <div className='min-w-0'>
                 <h3 className='text-sm font-semibold'>{t('Manual degradation probe')}</h3>
                 <p className='text-muted-foreground mt-0.5 text-xs'>
-                  {t('Select one or more channels below, then run the probe. Results stay hidden until you publish them.')}
+                  {t('Select a group, then pick the models to probe. Each group-model pair is checked independently. Results stay hidden until you publish them.')}
                 </p>
               </div>
               <div className='flex shrink-0 items-center gap-2'>
@@ -191,27 +306,29 @@ export function DegradationDetection() {
                   size='sm'
                   onClick={() => {
                     setRunMessage(null)
-                    runMutation.mutate(selectedGroups)
+                    runMutation.mutate(targets)
                   }}
-                  disabled={busy || selectedGroups.length === 0}
+                  disabled={busy || targets.length === 0}
                 >
                   <Play className='size-3.5' aria-hidden='true' />
-                  {busy ? t('Running probe...') : t('Run probe')}
+                  {taskRunning && task
+                    ? t('Running {{done}}/{{total}}', { done: task.completed, total: task.total })
+                    : t('Run probe')}
                 </Button>
               </div>
             </div>
 
-            {/* Dynamic channel/group selection */}
+            {/* Dynamic group -> model selection */}
             <div className='border-b px-4 py-3 sm:px-5'>
               <div className='mb-2 flex items-center justify-between gap-2'>
                 <span className='text-muted-foreground text-xs font-medium'>
-                  {t('Channels to probe')} ({selectedGroups.length}/{groups.length})
+                  {t('Models to probe')} ({targets.length}/{totalModels})
                 </span>
                 <div className='flex gap-3'>
                   <button
                     type='button'
                     className='text-muted-foreground hover:text-foreground text-xs underline-offset-2 hover:underline'
-                    onClick={() => setSelectedGroups(groups.map((g) => g.group))}
+                    onClick={selectAll}
                     disabled={groups.length === 0 || busy}
                   >
                     {t('Select all')}
@@ -219,17 +336,18 @@ export function DegradationDetection() {
                   <button
                     type='button'
                     className='text-muted-foreground hover:text-foreground text-xs underline-offset-2 hover:underline'
-                    onClick={() => setSelectedGroups([])}
-                    disabled={selectedGroups.length === 0 || busy}
+                    onClick={clearAll}
+                    disabled={targets.length === 0 || busy}
                   >
                     {t('Clear')}
                   </button>
                 </div>
               </div>
+
               {groupsQuery.isLoading ? (
-                <div className='grid gap-2 sm:grid-cols-2 lg:grid-cols-3'>
+                <div className='space-y-2'>
                   {Array.from({ length: 3 }).map((_, i) => (
-                    <Skeleton key={i} className='h-9 w-full rounded-md' />
+                    <Skeleton key={i} className='h-10 w-full rounded-md' />
                   ))}
                 </div>
               ) : groups.length === 0 ? (
@@ -237,37 +355,90 @@ export function DegradationDetection() {
                   {t('No channels available. Enable a channel first, then refresh.')}
                 </div>
               ) : (
-                <div className='grid gap-2 sm:grid-cols-2 lg:grid-cols-3'>
-                  {groups.map((g) => (
-                    <Label
-                      key={g.group}
-                      className='hover:bg-accent flex cursor-pointer items-center gap-2 rounded-md border px-3 py-2 text-xs font-normal'
-                    >
-                      <Checkbox
-                        checked={selectedGroups.includes(g.group)}
-                        onCheckedChange={(checked) => toggleGroup(g.group, checked === true)}
-                        disabled={busy}
-                      />
-                      <span className='min-w-0 flex-1 truncate'>{g.group}</span>
-                      <Badge variant='outline' className='shrink-0 text-[10px]'>
-                        {g.channel_count} {t('channels')}
-                      </Badge>
-                      {g.published_count > 0 && (
-                        <span className='text-muted-foreground shrink-0 text-[10px]' title={t('Published')}>
-                          ✓{g.published_count}
-                        </span>
-                      )}
-                      {g.pending_count > 0 && (
-                        <span className='shrink-0 text-[10px] text-amber-600' title={t('Pending review')}>
-                          ●{g.pending_count}
-                        </span>
-                      )}
-                    </Label>
-                  ))}
-                </div>
+                <Accordion
+                  value={openGroups}
+                  onValueChange={setOpenGroups}
+                  className='w-full'
+                >
+                  {groups.map((g) => {
+                    const count = selectedModelCount(g)
+                    const fully = isGroupFullySelected(g)
+                    return (
+                      <AccordionItem key={g.group} value={g.group} className='border-b last:border-b-0'>
+                        <div className='flex items-center gap-2 py-1'>
+                          <Checkbox
+                            checked={fully}
+                            indeterminate={!fully && count > 0}
+                            onCheckedChange={(checked) => setGroupModels(g, checked === true)}
+                            disabled={busy || g.models.length === 0}
+                            aria-label={g.group}
+                          />
+                          <AccordionTrigger className='hover:no-underline py-2'>
+                            <span className='flex min-w-0 flex-wrap items-center gap-2'>
+                              <span className='truncate text-xs font-medium'>{g.group}</span>
+                              <Badge variant='outline' className='shrink-0 text-[10px]'>
+                                {count}/{g.models.length} {t('models')}
+                              </Badge>
+                              <span className='text-muted-foreground shrink-0 text-[10px]'>
+                                {g.channel_count} {t('channels')}
+                              </span>
+                              {g.published_count > 0 && (
+                                <span className='text-muted-foreground shrink-0 text-[10px]' title={t('Published')}>
+                                  ✓{g.published_count}
+                                </span>
+                              )}
+                              {g.pending_count > 0 && (
+                                <span className='shrink-0 text-[10px] text-amber-600' title={t('Pending review')}>
+                                  ●{g.pending_count}
+                                </span>
+                              )}
+                            </span>
+                          </AccordionTrigger>
+                        </div>
+                        <AccordionContent className='pb-3 pl-6'>
+                          {g.models.length === 0 ? (
+                            <p className='text-muted-foreground py-1 text-xs'>
+                              {t('No enabled models in this group.')}
+                            </p>
+                          ) : (
+                            <div className='grid gap-1.5 pt-1 sm:grid-cols-2 lg:grid-cols-3'>
+                              {g.models.map((model) => (
+                                <Label
+                                  key={model}
+                                  className={cn(
+                                    'hover:bg-accent flex cursor-pointer items-center gap-2 rounded-md border px-2.5 py-1.5 text-xs font-normal'
+                                  )}
+                                >
+                                  <Checkbox
+                                    checked={(selection[g.group] ?? []).includes(model)}
+                                    onCheckedChange={(checked) => toggleModel(g.group, model, checked === true)}
+                                    disabled={busy}
+                                  />
+                                  <span className='min-w-0 flex-1 truncate font-mono text-[11px]'>
+                                    {model}
+                                  </span>
+                                </Label>
+                              ))}
+                            </div>
+                          )}
+                        </AccordionContent>
+                      </AccordionItem>
+                    )
+                  })}
+                </Accordion>
               )}
             </div>
 
+            {taskRunning && task && task.total > 0 && (
+              <div className='border-b px-4 py-2.5 sm:px-5'>
+                <div className='bg-muted h-1.5 w-full overflow-hidden rounded-full'>
+                  <div
+                    className='bg-primary h-full rounded-full transition-all'
+                    style={{ width: `${Math.round((task.completed / task.total) * 100)}%` }}
+                  />
+                </div>
+              </div>
+            )}
             {runMessage && (
               <div className={`border-b px-4 py-2.5 text-xs sm:px-5 ${runConflict ? 'text-amber-600' : ''}`}>
                 {runMessage}
@@ -278,6 +449,11 @@ export function DegradationDetection() {
                 {runMutation.error instanceof Error
                   ? runMutation.error.message
                   : t('Probe failed.')}
+              </div>
+            )}
+            {actionMessage && (
+              <div className='text-destructive border-b px-4 py-2.5 text-xs sm:px-5'>
+                {actionMessage}
               </div>
             )}
           </section>
@@ -331,8 +507,8 @@ function ResultSection(props: ResultSectionProps) {
       </div>
       <div className='p-4 sm:p-5'>
         {props.loading ? (
-          <div className='grid gap-4 md:grid-cols-2'>
-            {Array.from({ length: 2 }).map((_, i) => (
+          <div className='grid gap-4 sm:grid-cols-2 xl:grid-cols-3'>
+            {Array.from({ length: 3 }).map((_, i) => (
               <Skeleton key={i} className='h-64 w-full rounded-md' />
             ))}
           </div>
@@ -341,7 +517,7 @@ function ResultSection(props: ResultSectionProps) {
             {t('No results')}
           </div>
         ) : (
-          <div className='grid gap-4 md:grid-cols-2'>
+          <div className='grid gap-4 sm:grid-cols-2 xl:grid-cols-3'>
             {props.rows.map((row) => (
               <DegradationResultCard
                 key={row.id}
